@@ -6,58 +6,42 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Roboto', sans-serif;
-  background: url('background.jpg') no-repeat center center fixed;
-  background-size: 80%;
-  background-repeat: no-repeat;
-  background-position: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 80vh;
-}
-
-
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 80vh;
+    }
     .login-box {
       background-color: rgba(255, 255, 255, 0.95);
       padding: 40px;
       border-radius: 12px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.3);
       width: 100%;
-      max-width: 400px;
+      max-width: 300px;
       text-align: center;
     }
-
-    h2 {
-      margin-bottom: 20px;
-      color: #222;
-    }
-
-    input {
+    input, button {
       width: 100%;
       padding: 12px;
       margin: 10px 0;
       font-size: 16px;
-      border: 1px solid #ccc;
       border-radius: 6px;
+      border: 1px solid #ccc;
     }
-
     button {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
-      margin-top: 10px;
     }
-
     button:hover {
       background-color: #0056b3;
     }
@@ -66,8 +50,8 @@ body {
 <body>
   <div class="login-box">
     <h2>Logowanie do systemu RCP</h2>
-    <input id="login" placeholder="Login (np. jan.kowalski)">
-    <input id="haslo" type="password" placeholder="Hasło">
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Hasło">
     <button onclick="zaloguj()">Zaloguj</button>
   </div>
 
@@ -81,24 +65,29 @@ body {
       appId: "1:1040181155679:web:8ffe7609b67a5e29bd08ea",
       measurementId: "G-JR8QXZZYXE"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
     async function zaloguj() {
-      const login = document.getElementById("login").value.trim();
-      const haslo = document.getElementById("haslo").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
 
-      const doc = await db.collection("users").doc(login).get();
-      if (!doc.exists) return alert("Błędny login");
+      try {
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-      const data = doc.data();
-      if (data.haslo !== haslo) return alert("Błędne hasło");
+        const doc = await db.collection("users").doc(user.email).get();
+        if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
 
-      localStorage.setItem("login", login);
-      localStorage.setItem("rola", data.rola);
+        const data = doc.data();
+        localStorage.setItem("login", user.email);
+        localStorage.setItem("rola", data.rola);
 
-      window.location.href = data.rola === "admin" ? "admin.html" : "employee.html";
+        window.location.href = data.rola === "admin" ? "admin.html" : "employee.html";
+      } catch (error) {
+        console.error(error);
+        alert("Błędny email lub hasło");
+      }
     }
   </script>
 </body>
