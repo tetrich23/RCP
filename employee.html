@@ -24,7 +24,7 @@
       padding: 40px;
       border-radius: 12px;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     }
     h2 {
@@ -61,9 +61,14 @@
     ul {
       margin-top: 20px;
       padding-left: 20px;
+      max-height: 200px;
+      overflow-y: auto;
     }
     li {
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      background-color: rgba(255,255,255,0.05);
+      padding: 6px 10px;
+      border-radius: 6px;
     }
   </style>
 </head>
@@ -111,6 +116,13 @@
       }
     });
 
+    function obliczGodziny(start, end) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const czas = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+      return czas > 0 ? czas.toFixed(2) : "0.00";
+    }
+
     async function zapisz() {
       const data = document.getElementById("data").value;
       const start = document.getElementById("start").value;
@@ -119,13 +131,15 @@
       if (!data || !start || !end) return alert("Uzupełnij wszystkie pola!");
       if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
 
+      const godziny = obliczGodziny(start, end);
+
       try {
-        await db.collection("godziny").add({ login, data, start, end });
-        alert("Zapisano");
+        await db.collection("godziny").add({ login, data, start, end, godziny });
+        alert("Zapisano.");
         wczytaj();
       } catch (err) {
         console.error("Błąd zapisu:", err);
-        alert("Nie udało się zapisać danych. Sprawdź połączenie i uprawnienia.");
+        alert("Nie udało się zapisać danych. Spróbuj ponownie.");
       }
     }
 
@@ -140,7 +154,7 @@
       lista.innerHTML = "";
       snap.forEach(doc => {
         const g = doc.data();
-        lista.innerHTML += `<li>${g.data}: ${g.start} – ${g.end}</li>`;
+        lista.innerHTML += `<li>${g.data}: ${g.start} – ${g.end} (${g.godziny}h)</li>`;
       });
     }
   </script>
