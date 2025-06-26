@@ -116,6 +116,7 @@
       const start = document.getElementById("start").value;
       const end = document.getElementById("end").value;
       if (!data || !start || !end) return alert("Uzupełnij wszystkie pola!");
+      if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia."); // punkt 3
 
       await db.collection("godziny").add({ login, data, start, end });
       alert("Zapisano");
@@ -123,7 +124,11 @@
     }
 
     async function wczytaj() {
-      const snap = await db.collection("godziny").where("login", "==", login).get();
+      const snap = await db.collection("godziny")
+        .where("login", "==", login)
+        .orderBy("data", "desc") // punkt 4
+        .get();
+
       const lista = document.getElementById("lista");
       lista.innerHTML = "";
       snap.forEach(doc => {
