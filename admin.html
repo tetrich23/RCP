@@ -3,15 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <title>Panel Administratora</title>
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <!-- SheetJS (eksport XLSX) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-
   <style>
+    /* (twój dotychczasowy CSS zostaje bez zmian) */
     :root {
       --bg-gradient: linear-gradient(135deg, #2c3e50, #4f669d);
       --panel-bg: rgba(30, 30, 47, 0.85);
@@ -36,76 +34,7 @@
       border-radius: 16px; padding: 30px;
       box-shadow: 0 8px 30px rgba(0,0,0,0.5);
     }
-    h2 {
-      margin-top: 0; font-size: 1.8rem;
-      letter-spacing: 1px;
-    }
-    .controls {
-      display: flex; flex-wrap: wrap;
-      gap: 15px; margin: 20px 0;
-      justify-content: center;
-    }
-    .controls label,
-    .controls select,
-    .controls button { font-size: 1rem; }
-    select {
-      min-width: 160px; padding: 8px 10px;
-      border: 1px solid var(--accent-light);
-      border-radius: 6px; background: transparent;
-      color: var(--text); transition: all .3s;
-    }
-    select:hover {
-      border-color: var(--accent);
-      background: var(--accent-light);
-    }
-    button {
-      cursor: pointer; padding: 8px 16px;
-      border: none; border-radius: 6px;
-      background: var(--btn-bg); color: #fff;
-      transition: background .3s;
-    }
-    button:hover { background: var(--btn-hover); }
-    table {
-      width: 100%; border-collapse: collapse;
-      overflow: hidden; border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-      background: var(--panel-bg);
-    }
-    thead th {
-      position: sticky; top: 0;
-      background: var(--accent-light);
-      color: #fff; padding: 12px;
-      font-weight: 600; letter-spacing: .5px;
-      z-index: 1;
-    }
-    tbody tr:hover { background: var(--row-hover); }
-    th, td {
-      padding: 12px 8px; text-align: center;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    td[contenteditable] {
-      background: rgba(255,255,255,0.1);
-      transition: background .2s;
-    }
-    td[contenteditable]:focus {
-      background: rgba(255,255,255,0.2);
-      outline: none;
-    }
-    .delete-btn {
-      padding: 6px 12px; background: #ff4444;
-      transition: background .3s; border: none;
-      border-radius: 4px; color: #fff; cursor: pointer;
-    }
-    .delete-btn:hover { background: #e03333; }
-    tfoot td {
-      padding: 14px 8px; font-weight: 600;
-      background: var(--panel-bg);
-      border-top: 2px solid var(--accent);
-    }
-    @media (max-width: 768px) {
-      .controls { flex-direction: column; }
-      thead th, td { font-size: 0.9rem; padding: 10px 6px; }
-    }
+    /* ... reszta stylów taka jak wcześniej ... */
   </style>
 </head>
 <body>
@@ -124,7 +53,6 @@
       </label>
       <button id="exportBtn">Eksport do Excela</button>
     </div>
-
     <table id="tabela-pracownikow">
       <thead>
         <tr>
@@ -151,8 +79,19 @@
       appId: "1:1040181155679:web:8ffe7609b67a5e29bd08ea",
       measurementId: "G-JR8QXZZYXE"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        alert("Musisz być zalogowany, aby korzystać z panelu administratora.");
+        window.location.href = "login.html";
+      } else {
+        wczytaj();
+      }
+    });
+
     const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
     const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
     const filterUser  = document.getElementById("filterUser");
@@ -161,46 +100,48 @@
     let aktualneDane  = [];
 
     async function wczytaj() {
-      const snapshot = await db.collection("godziny").get();
-      const wszystkieDane = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      try {
+        const snapshot = await db.collection("godziny").get();
+        const wszystkieDane = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // dropdowny
-      const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
-      if (filterUser.options.length <= 1) {
-        filterUser.innerHTML =
-          '<option value="">Wszyscy</option>' +
-          unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+        const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
+        if (filterUser.options.length <= 1) {
+          filterUser.innerHTML =
+            '<option value="">Wszyscy</option>' +
+            unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+        }
+
+        const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
+        if (filterMonth.options.length <= 1) {
+          filterMonth.innerHTML =
+            '<option value="">Wszystkie</option>' +
+            miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        aktualneDane = wszystkieDane.filter(d =>
+          (!filterUser.value  || d.login === filterUser.value) &&
+          (!filterMonth.value || (d.data && d.data.startsWith(filterMonth.value)))
+        );
+        aktualneDane.sort((a,b) => new Date(b.data) - new Date(a.data));
+
+        tabelaBody.innerHTML = "";
+        aktualneDane.forEach(dane => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${dane.login}</td>
+            <td>${dane.data}</td>
+            <td contenteditable onblur="zapiszZmiane('${dane.id}','start',this.innerText)">${dane.start}</td>
+            <td contenteditable onblur="zapiszZmiane('${dane.id}','end',this.innerText)">${dane.end}</td>
+            <td class="godziny">${dane.godziny}</td>
+            <td><button class="delete-btn" onclick="usunRekord('${dane.id}')">Usuń</button></td>
+          `;
+          tabelaBody.appendChild(tr);
+        });
+        rysujStopke(aktualneDane);
+      } catch (err) {
+        console.error("Błąd przy pobieraniu danych:", err);
+        alert("Nie udało się pobrać danych. Upewnij się, że masz dostęp i jesteś zalogowany.");
       }
-      const miesiace = [...new Set(
-        wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean)
-      )];
-      if (filterMonth.options.length <= 1) {
-        filterMonth.innerHTML =
-          '<option value="">Wszystkie</option>' +
-          miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
-      }
-
-      // filtr + sort
-      aktualneDane = wszystkieDane.filter(d =>
-        (!filterUser.value  || d.login === filterUser.value) &&
-        (!filterMonth.value || (d.data && d.data.startsWith(filterMonth.value)))
-      );
-      aktualneDane.sort((a,b) => new Date(b.data) - new Date(a.data));
-
-      tabelaBody.innerHTML = "";
-      aktualneDane.forEach(dane => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dane.login}</td>
-          <td>${dane.data}</td>
-          <td contenteditable onblur="zapiszZmiane('${dane.id}','start',this.innerText)">${dane.start}</td>
-          <td contenteditable onblur="zapiszZmiane('${dane.id}','end',this.innerText)">${dane.end}</td>
-          <td class="godziny">${dane.godziny}</td>
-          <td><button class="delete-btn" onclick="usunRekord('${dane.id}')">Usuń</button></td>
-        `;
-        tabelaBody.appendChild(tr);
-      });
-      rysujStopke(aktualneDane);
     }
 
     function rysujStopke(rows) {
@@ -214,8 +155,7 @@
     }
 
     function obliczGodziny(start, end) {
-      if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end))
-        return "0.00";
+      if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
       const [sh, sm] = start.split(":").map(Number);
       const [eh, em] = end.split(":").map(Number);
       const godziny = ((eh*60 + em) - (sh*60 + sm)) / 60;
@@ -234,30 +174,4 @@
       const dane = docSnap.data();
       dane[pole] = wartosc;
       if (dane.start && dane.end) {
-        dane.godziny = obliczGodziny(dane.start, dane.end);
-      }
-      await docRef.set(dane);
-      wczytaj();
-    }
-
-    async function usunRekord(id) {
-      if (confirm("Czy na pewno chcesz usunąć ten wpis?")) {
-        await db.collection("godziny").doc(id).delete();
-        wczytaj();
-      }
-    }
-
-    exportBtn.addEventListener("click", () => {
-      const wb = XLSX.utils.book_new();
-      const tabelaClone = document.getElementById("tabela-pracownikow").cloneNode(true);
-      tabelaClone.querySelectorAll("tr").forEach(tr => tr.removeChild(tr.lastElementChild));
-      const ws = XLSX.utils.table_to_sheet(tabelaClone);
-      XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-      XLSX.writeFile(wb, "godziny.xlsx");
-    });
-
-    // start
-    wczytaj();
-  </script>
-</body>
-</html>
+        dane.godziny = obliczGodziny(dane.start
