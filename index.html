@@ -57,14 +57,14 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-  authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-  projectId: "rejestracja-czasu-pracy-e345e",
-  storageBucket: "rejestracja-czasu-pracy-e345e.firebasestorage.app",
-  messagingSenderId: "198373663295",
-  appId: "1:198373663295:web:a2a07384d8814101254e8a",
-  measurementId: "G-6CG743TGTS"
-};
+      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+      projectId: "rejestracja-czasu-pracy-e345e",
+      storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
+      messagingSenderId: "198373663295",
+      appId: "1:198373663295:web:a2a07384d8814101254e8a",
+      measurementId: "G-6CG743TGTS"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -83,7 +83,18 @@
         localStorage.setItem("login", user.email);
         localStorage.setItem("rola", data.rola);
 
-        window.location.href = data.rola === "admin" ? "admin.html" : "employee.html";
+        console.log("Rola użytkownika:", data.rola);
+
+        if (data.rola === "admin") {
+          window.location.href = "admin.html";
+        } else if (data.rola === "kierownik") {
+          window.location.href = "kierownik.html";
+        } else if (data.rola === "pracownik") {
+          window.location.href = "employee.html";
+        } else {
+          alert("Nieznana rola: " + data.rola);
+        }
+
       } catch (error) {
         console.error(error);
         alert("Błędny email lub hasło");
