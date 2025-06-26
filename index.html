@@ -65,6 +65,7 @@
       appId: "1:198373663295:web:a2a07384d8814101254e8a",
       measurementId: "G-6CG743TGTS"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -79,14 +80,18 @@
         const doc = await db.collection("users").doc(user.email).get();
         if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
 
-        const data = doc.data();
-        const rola = (data.rola || "").trim().toLowerCase();
+        const rawRola = doc.data().rola;
+        const rola = String(rawRola || "")
+          .trim()
+          .normalize("NFKC")
+          .replace(/\s+/g, "")
+          .toLowerCase();
+
+        console.log("Zalogowany jako:", user.email);
+        console.log("Rola z Firestore:", "[" + rola + "]");
 
         localStorage.setItem("login", user.email);
         localStorage.setItem("rola", rola);
-
-        console.log("Zalogowany jako:", user.email);
-        console.log("Rola z Firestore:", rola);
 
         if (rola === "admin") {
           window.location.href = "admin.html";
@@ -95,15 +100,14 @@
         } else if (rola === "pracownik") {
           window.location.href = "employee.html";
         } else {
-          alert("Nieznana rola: " + data.rola);
+          alert("Nieznana rola: " + rawRola);
         }
 
       } catch (error) {
-        console.error(error);
+        console.error("Błąd logowania:", error);
         alert("Błędny email lub hasło");
       }
     }
   </script>
 </body>
 </html>
-
