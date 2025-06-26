@@ -1,141 +1,207 @@
-<!-- Tutaj cały Twój HTML z wyglądem bez zmian -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel RCP</title>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyAY0AW9hCysl2jNTiWVolraGN841Q2BMz4",
-    authDomain: "rcp-online.firebaseapp.com",
-    projectId: "rcp-online",
-    storageBucket: "rcp-online.appspot.com",
-    messagingSenderId: "1040181155679",
-    appId: "1:1040181155679:web:8ffe7609b67a5e29bd08ea",
-    measurementId: "G-JR8QXZZYXE"
-  };
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <!-- XLSX do eksportu -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-  firebase.auth().onAuthStateChanged(user => {
-    if (!user) {
-      alert("Musisz być zalogowany, aby korzystać z panelu administratora.");
-      window.location.href = "login.html";
-    } else {
-      wczytaj();
-    }
-  });
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background-color: #f7f7f7; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background-color: #eee; }
+    td[contenteditable] { background-color: #fdfdfd; }
+    button { padding: 6px 12px; margin: 10px 0; cursor: pointer; }
+    select { margin-left: 10px; }
+  </style>
+</head>
+<body>
 
-  const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
-  const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
-  const filterUser  = document.getElementById("filterUser");
-  const filterMonth = document.getElementById("filterMonth");
-  const exportBtn   = document.getElementById("exportBtn");
-  let aktualneDane  = [];
+  <h1>Panel RCP</h1>
 
-  function obliczGodziny(start, end) {
-    if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    const godziny = ((eh*60 + em) - (sh*60 + sm)) / 60;
-    return godziny > 0 ? godziny.toFixed(2) : "0.00";
-  }
+  <label>Pracownik:
+    <select id="filterUser"><option value="">Wszyscy</option></select>
+  </label>
 
-  async function wczytaj() {
-    try {
-      const snapshot = await db.collection("godziny").get();
-      const wszystkieDane = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          login: data.login || "",
-          data: data.data || "",
-          start: data.start || "",
-          end: data.end || "",
-          godziny: data.godziny || obliczGodziny(data.start, data.end)
-        };
-      });
+  <label>Miesiąc:
+    <select id="filterMonth"><option value="">Wszystkie</option></select>
+  </label>
 
-      // Dropdowny
-      const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
-      if (filterUser.options.length <= 1) {
-        filterUser.innerHTML =
-          '<option value="">Wszyscy</option>' +
-          unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
-      }
+  <button id="exportBtn">Eksportuj</button>
 
-      const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
-      if (filterMonth.options.length <= 1) {
-        filterMonth.innerHTML =
-          '<option value="">Wszystkie</option>' +
-          miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
-      }
-
-      aktualneDane = wszystkieDane.filter(d =>
-        (!filterUser.value  || d.login === filterUser.value) &&
-        (!filterMonth.value || (d.data && d.data.startsWith(filterMonth.value)))
-      );
-      aktualneDane.sort((a,b) => new Date(b.data) - new Date(a.data));
-
-      tabelaBody.innerHTML = "";
-      aktualneDane.forEach(dane => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${dane.login}</td>
-          <td>${dane.data}</td>
-          <td contenteditable onblur="zapiszZmiane('${dane.id}','start',this.innerText)">${dane.start}</td>
-          <td contenteditable onblur="zapiszZmiane('${dane.id}','end',this.innerText)">${dane.end}</td>
-          <td class="godziny">${dane.godziny}</td>
-          <td><button class="delete-btn" onclick="usunRekord('${dane.id}')">Usuń</button></td>
-        `;
-        tabelaBody.appendChild(tr);
-      });
-      rysujStopke(aktualneDane);
-    } catch (err) {
-      console.error("Błąd pobierania danych:", err);
-      alert("Nie udało się pobrać danych.");
-    }
-  }
-
-  function rysujStopke(rows) {
-    const suma = rows.reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0).toFixed(2);
-    tabelaFoot.innerHTML = `
+  <table id="tabela-pracownikow">
+    <thead>
       <tr>
-        <td colspan="4"><strong>Razem</strong></td>
-        <td><strong>${suma}</strong></td>
-        <td></td>
-      </tr>`;
-  }
+        <th>Login</th>
+        <th>Data</th>
+        <th>Start</th>
+        <th>Koniec</th>
+        <th>Godziny</th>
+        <th>Akcje</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot></tfoot>
+  </table>
 
-  async function zapiszZmiane(id, pole, wartosc) {
-    if ((pole==="start"||pole==="end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
-      alert("Nieprawidłowy format godziny. Użyj HH:MM");
+  <script>
+    // Konfiguracja Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyAY0AW9hCysl2jNTiWVolraGN841Q2BMz4",
+      authDomain: "rcp-online.firebaseapp.com",
+      projectId: "rcp-online",
+      storageBucket: "rcp-online.appspot.com",
+      messagingSenderId: "1040181155679",
+      appId: "1:1040181155679:web:8ffe7609b67a5e29bd08ea",
+      measurementId: "G-JR8QXZZYXE"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) {
+        alert("Musisz być zalogowany, aby korzystać z panelu administratora.");
+        window.location.href = "login.html";
+      } else {
+        wczytaj();
+      }
+    });
+
+    const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
+    const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
+    const filterUser  = document.getElementById("filterUser");
+    const filterMonth = document.getElementById("filterMonth");
+    const exportBtn   = document.getElementById("exportBtn");
+    let aktualneDane  = [];
+
+    function obliczGodziny(start, end) {
+      if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const godziny = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+      return godziny > 0 ? godziny.toFixed(2) : "0.00";
+    }
+
+    async function wczytaj() {
+      try {
+        const snapshot = await db.collection("godziny").get();
+        const wszystkieDane = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            login: data.login || "",
+            data: data.data || "",
+            start: data.start || "",
+            end: data.end || "",
+            godziny: data.godziny || obliczGodziny(data.start, data.end)
+          };
+        });
+
+        // Unikalne loginy i miesiące
+        const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
+        if (filterUser.options.length <= 1) {
+          filterUser.innerHTML =
+            '<option value="">Wszyscy</option>' +
+            unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+        }
+
+        const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0, 7)).filter(Boolean))];
+        if (filterMonth.options.length <= 1) {
+          filterMonth.innerHTML =
+            '<option value="">Wszystkie</option>' +
+            miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
+        }
+
+        aktualneDane = wszystkieDane.filter(d =>
+          (!filterUser.value || d.login === filterUser.value) &&
+          (!filterMonth.value || (d.data && d.data.startsWith(filterMonth.value)))
+        );
+        aktualneDane.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+        tabelaBody.innerHTML = "";
+        aktualneDane.forEach(dane => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${dane.login}</td>
+            <td>${dane.data}</td>
+            <td contenteditable onblur="zapiszZmiane('${dane.id}','start',this.innerText)">${dane.start}</td>
+            <td contenteditable onblur="zapiszZmiane('${dane.id}','end',this.innerText)">${dane.end}</td>
+            <td class="godziny">${dane.godziny}</td>
+            <td><button onclick="usunRekord('${dane.id}')">Usuń</button></td>
+          `;
+          tabelaBody.appendChild(tr);
+        });
+
+        rysujStopke(aktualneDane);
+      } catch (err) {
+        console.error("Błąd pobierania danych:", err);
+        alert("Nie udało się pobrać danych.");
+      }
+    }
+
+    function rysujStopke(rows) {
+      const suma = rows.reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0).toFixed(2);
+      tabelaFoot.innerHTML = `
+        <tr>
+          <td colspan="4"><strong>Razem</strong></td>
+          <td><strong>${suma}</strong></td>
+          <td></td>
+        </tr>`;
+    }
+
+    async function zapiszZmiane(id, pole, wartosc) {
+      if ((pole === "start" || pole === "end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
+        alert("Nieprawidłowy format godziny. Użyj HH:MM");
+        wczytaj();
+        return;
+      }
+      const docRef = db.collection("godziny").doc(id);
+      const docSnap = await docRef.get();
+      if (!docSnap.exists) return;
+      const dane = docSnap.data();
+      dane[pole] = wartosc;
+      if (dane.start && dane.end) {
+        dane.godziny = obliczGodziny(dane.start, dane.end);
+      }
+      await docRef.set(dane);
       wczytaj();
-      return;
     }
-    const docRef = db.collection("godziny").doc(id);
-    const docSnap = await docRef.get();
-    if (!docSnap.exists) return;
-    const dane = docSnap.data();
-    dane[pole] = wartosc;
-    if (dane.start && dane.end) {
-      dane.godziny = obliczGodziny(dane.start, dane.end);
+
+    async function usunRekord(id) {
+      if (confirm("Czy na pewno chcesz usunąć ten wpis?")) {
+        await db.collection("godziny").doc(id).delete();
+        wczytaj();
+      }
     }
-    await docRef.set(dane);
-    wczytaj();
-  }
 
-  async function usunRekord(id) {
-    if (confirm("Czy na pewno chcesz usunąć ten wpis?")) {
-      await db.collection("godziny").doc(id).delete();
-      wczytaj();
-    }
-  }
+    exportBtn.addEventListener("click", () => {
+      const wb = XLSX.utils.book_new();
+      const tabelaClone = document.getElementById("tabela-pracownikow").cloneNode(true);
+      tabelaClone.querySelectorAll("tr").forEach(tr => {
+        const last = tr.lastElementChild;
+        if (last) tr.removeChild(last); // usuń kolumnę "Akcje"
+      });
+      const ws = XLSX.utils.table_to_sheet(tabelaClone);
+      XLSX.utils.book_append_sheet(wb, ws, "Godziny");
+      XLSX.writeFile(wb, "godziny.xlsx");
+    });
 
-  exportBtn.addEventListener("click", () => {
-    const wb = XLSX.utils.book_new();
-    const tabelaClone = document.getElementById("tabela-pracownikow").cloneNode(true);
-    tabelaClone.querySelectorAll("tr").forEach(tr => tr.removeChild(tr.lastElementChild));
-    const ws = XLSX.utils.table_to_sheet(tabelaClone);
-    XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-    XLSX.writeFile(wb, "godziny.xlsx");
-  });
-</script>
+    // Obsługa zmiany filtrów
+    filterUser.addEventListener("change", wczytaj);
+    filterMonth.addEventListener("change", wczytaj);
 
+    // Udostępniamy funkcje globalnie do onblur i onclick
+    window.zapiszZmiane = zapiszZmiane;
+    window.usunRekord = usunRekord;
+  </script>
+
+</body>
+</html>
