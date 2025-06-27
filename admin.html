@@ -328,7 +328,7 @@ exportBtn.addEventListener("click", () => {
 
   const ws = XLSX.utils.json_to_sheet(daneDoRaportu, {
     header: ["Kod pracownika", "Data", "Rodzaj czasu", "Od godziny", "Do godziny", "Liczba godzin", "Opis"]
-  });
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, "Raport enova");
   XLSX.writeFile(wb, "raport_enova.xlsx");
@@ -351,7 +351,7 @@ exportBtn.addEventListener("click", () => {
 
   XLSX.utils.book_append_sheet(wb, ws, "Godziny");
   XLSX.writeFile(wb, "godziny_do_enova.xlsx");
-
+    });
 
     // Obsługa zmiany filtrów
     filterUser.addEventListener("change", wczytaj);
