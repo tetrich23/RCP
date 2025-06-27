@@ -140,8 +140,8 @@
           <td class="${kolor}">${status}</td>
           <td>
             ${parseFloat(row.godziny) > 8 ? `
-              <button onclick="zatwierdz('${row.id}')">✅</button>
-              <button onclick="odrzuc('${row.id}')">❌</button>
+              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
+              <button onclick="odrzuc('${row.id}')">Odrzuc</button>
             ` : ""}
           </td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
