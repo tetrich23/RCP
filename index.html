@@ -13,15 +13,13 @@
       padding: 0;
       font-family: 'Roboto', sans-serif;
       background: url('background.jpg') no-repeat center center fixed;
-      background-size: contain; /* dopasowanie całego obrazu */
-      background-repeat: no-repeat;
-      background-position: center;
+      background-size: contain;
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
     }
-    .login-box {
+    .login-box, .role-box {
       background-color: rgba(255, 255, 255, 0.95);
       padding: 40px;
       border-radius: 12px;
@@ -47,14 +45,22 @@
     button:hover {
       background-color: #0056b3;
     }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <div class="login-box">
+  <div class="login-box" id="loginBox">
     <h2>Logowanie do systemu RCP</h2>
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Hasło">
     <button onclick="zaloguj()">Zaloguj</button>
+  </div>
+
+  <div class="role-box hidden" id="roleBox">
+    <h2>Wybierz rolę</h2>
+    <div id="roleButtons"></div>
   </div>
 
   <script>
@@ -82,32 +88,51 @@
         const doc = await db.collection("users").doc(user.email).get();
         if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
 
-        const rawRola = doc.data().rola;
-        const rola = String(rawRola || "")
-          .trim()
-          .normalize("NFKC")
-          .replace(/\s+/g, "")
-          .toLowerCase();
+        let rola = doc.data().rola;
+        if (!rola) return alert("Brak przypisanej roli");
 
-        console.log("Zalogowany jako:", user.email);
-        console.log("Rola z Firestore:", "[" + rola + "]");
+        // Znormalizuj dane do tablicy
+        if (typeof rola === 'string') {
+          rola = [rola];
+        }
+
+        rola = rola.map(r => r.trim().toLowerCase());
 
         localStorage.setItem("login", user.email);
-        localStorage.setItem("rola", rola);
+        localStorage.setItem("rolaArray", JSON.stringify(rola)); // zapisz jako JSON
 
-        if (rola === "admin") {
-          window.location.href = "admin.html";
-        } else if (rola === "kierownik") {
-          window.location.href = "panel_kierownika.html";
-        } else if (rola === "pracownik") {
-          window.location.href = "employee.html";
+        if (rola.length === 1) {
+          przekierujDoPanelu(rola[0]);
         } else {
-          alert("Nieznana rola: " + rawRola);
+          document.getElementById("loginBox").classList.add("hidden");
+          const roleBox = document.getElementById("roleBox");
+          const roleButtons = document.getElementById("roleButtons");
+          roleButtons.innerHTML = "";
+
+          rola.forEach(r => {
+            const btn = document.createElement("button");
+            btn.textContent = r.charAt(0).toUpperCase() + r.slice(1);
+            btn.onclick = () => przekierujDoPanelu(r);
+            roleButtons.appendChild(btn);
+          });
+
+          roleBox.classList.remove("hidden");
         }
 
       } catch (error) {
         console.error("Błąd logowania:", error);
         alert("Błędny email lub hasło");
+      }
+    }
+
+    function przekierujDoPanelu(rola) {
+      localStorage.setItem("rola", rola);
+      switch (rola) {
+        case "admin": window.location.href = "admin.html"; break;
+        case "kierownik": window.location.href = "panel_kierownika.html"; break;
+        case "pracownik": window.location.href = "employee.html"; break;
+        default:
+          alert("Nieznana rola: " + rola);
       }
     }
   </script>
