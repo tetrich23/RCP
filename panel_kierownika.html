@@ -111,16 +111,18 @@
 <body>
   <h1>Panel Kierownika</h1>
 
-  <div>
-<label>Login:</label>
-<select id="filterLogin">
-  <option value="">-- Wszyscy --</option>
-</select>
-    <label>Data:</label>
-    <input type="date" id="filterDate">
-    <button onclick="filtruj()">Filtruj</button>
-    <button id="exportBtn">Eksportuj do Excela</button>
-  </div>
+ <div>
+  <label>Login:</label>
+  <select id="filterLogin">
+    <option value="">-- Wszyscy --</option>
+  </select>
+  
+  <label>Data:</label>
+  <input type="date" id="filterDate">
+  
+  <button onclick="filtruj()">Filtruj</button>
+  <button id="exportBtn">Eksportuj do Excela</button>
+</div>
 
   <table>
     <thead>
