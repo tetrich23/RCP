@@ -165,20 +165,31 @@
       return diff > 0 ? diff.toFixed(2) : "0.00";
     }
 
-    firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return location.href = "login.html";
-      const doc = await db.collection("users").doc(user.email).get();
-      const data = doc.data();
-      if (!data || data.rola !== "kierownik") return location.href = "login.html";
+   firebase.auth().onAuthStateChanged(async user => {
+  if (!user) return location.href = "login.html";
+  const doc = await db.collection("users").doc(user.email).get();
+  const data = doc.data();
+  if (!data || data.rola !== "kierownik") return location.href = "login.html";
 
-      const podwladni = data.podwladni || [];
-      const snapshot = await db.collection("godziny").get();
-      daneWidoczne = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(r => podwladni.includes(r.login));
+  const podwladni = data.podwladni || [];
 
-      renderujTabele(daneWidoczne);
-    });
+  // Dodaj do <select> opcje z loginami
+  const select = document.getElementById("filterLogin");
+  podwladni.forEach(login => {
+    const option = document.createElement("option");
+    option.value = login;
+    option.textContent = login;
+    select.appendChild(option);
+  });
+
+  const snapshot = await db.collection("godziny").get();
+  daneWidoczne = snapshot.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(r => podwladni.includes(r.login));
+
+  renderujTabele(daneWidoczne);
+});
+
 
     function renderujTabele(dane) {
       tabela.innerHTML = "";
