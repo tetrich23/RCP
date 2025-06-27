@@ -284,13 +284,36 @@
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
-  // Posortuj dane alfabetycznie po loginie (e-mailu), potem po dacie
   const danePosortowane = [...aktualneDane].sort((a, b) => {
     if (a.login === b.login) {
       return new Date(a.data) - new Date(b.data);
     }
     return a.login.localeCompare(b.login);
   });
+
+  const daneDoRaportu = danePosortowane.map(row => {
+    const kodPracownika = row.login.split("@")[0]; // np. jan.kowalski
+    const rodzajCzasu = "PRACA";
+    const opis = "Ewidencja RCP";
+    return {
+      "Kod pracownika": kodPracownika,
+      "Data": row.data,
+      "Rodzaj czasu": rodzajCzasu,
+      "Od godziny": row.start,
+      "Do godziny": row.end,
+      "Liczba godzin": row.godziny,
+      "Opis": opis
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(daneDoRaportu, {
+    header: ["Kod pracownika", "Data", "Rodzaj czasu", "Od godziny", "Do godziny", "Liczba godzin", "Opis"]
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, "Raport enova");
+  XLSX.writeFile(wb, "raport_enova.xlsx");
+});
+
 
   // Przygotuj dane w odpowiedniej kolejności kolumn
   const daneDoEksportu = danePosortowane.map(row => ({
