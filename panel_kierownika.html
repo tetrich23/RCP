@@ -166,10 +166,10 @@
     }
 
    firebase.auth().onAuthStateChanged(async user => {
-  if (!user) return location.href = "login.html";
+  if (!user) return location.href = "index.html";
   const doc = await db.collection("users").doc(user.email).get();
   const data = doc.data();
-  if (!data || data.rola !== "kierownik") return location.href = "login.html";
+  if (!data || data.rola !== "kierownik") return location.href = "index.html";
 
   const podwladni = data.podwladni || [];
 
