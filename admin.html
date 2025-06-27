@@ -284,12 +284,32 @@
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
+  // Posortuj dane alfabetycznie po loginie, a potem po dacie
   const danePosortowane = [...aktualneDane].sort((a, b) => {
     if (a.login === b.login) {
       return new Date(a.data) - new Date(b.data);
     }
     return a.login.localeCompare(b.login);
   });
+
+  // Przygotuj dane w odpowiedniej kolejności kolumn
+  const daneDoEksportu = danePosortowane.map(row => ({
+    Login: row.login,
+    Data: row.data,
+    Start: row.start,
+    Koniec: row.end,
+    Godziny: row.godziny
+  }));
+
+  // Konwersja do arkusza Excela
+  const ws = XLSX.utils.json_to_sheet(daneDoEksportu, {
+    header: ["Login", "Data", "Start", "Koniec", "Godziny"]
+  });
+
+  XLSX.utils.book_append_sheet(wb, ws, "Godziny");
+  XLSX.writeFile(wb, "raport_miesieczny.xlsx");
+});
+
 
   const daneDoRaportu = danePosortowane.map(row => {
     const kodPracownika = row.login.split("@")[0]; // np. jan.kowalski
