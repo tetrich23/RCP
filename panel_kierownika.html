@@ -34,8 +34,8 @@
       background-color: #f9f9f9;
     }
     button {
-      margin-top: 10px;
-      padding: 8px 16px;
+      margin: 4px 2px;
+      padding: 6px 12px;
       background-color: #3498db;
       color: white;
       border: none;
@@ -45,6 +45,8 @@
     button:hover {
       background-color: #2980b9;
     }
+    .green { color: green; font-weight: bold; }
+    .red { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -60,6 +62,7 @@
         <th>Start</th>
         <th>Koniec</th>
         <th>Godziny</th>
+        <th>Nadgodziny</th>
         <th>Akcje</th>
       </tr>
     </thead>
@@ -69,14 +72,14 @@
 
   <script>
     const firebaseConfig = {
-  apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-  authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-  projectId: "rejestracja-czasu-pracy-e345e",
-  storageBucket: "rejestracja-czasu-pracy-e345e.firebasestorage.app",
-  messagingSenderId: "198373663295",
-  appId: "1:198373663295:web:a2a07384d8814101254e8a",
-  measurementId: "G-6CG743TGTS"
-};
+      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+      projectId: "rejestracja-czasu-pracy-e345e",
+      storageBucket: "rejestracja-czasu-pracy-e345e.firebasestorage.app",
+      messagingSenderId: "198373663295",
+      appId: "1:198373663295:web:a2a07384d8814101254e8a",
+      measurementId: "G-6CG743TGTS"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -134,13 +137,35 @@
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${row.godziny}</td>
+          <td>${parseFloat(row.godziny) > 8 ? nadgodzinyStatus(row) : "-"}</td>
           <td><button onclick="usun('${row.id}')">Usuń</button></td>
         `;
         tabela.appendChild(tr);
       });
 
-      const suma = dane.reduce((sum, r) => sum + parseFloat(r.godziny || 0), 0).toFixed(2);
-      stopka.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${suma}</strong></td><td></td></tr>`;
+      const suma = dane.reduce((sum, r) => {
+        const godziny = parseFloat(r.godziny || 0);
+        if (godziny > 8) {
+          return r.nadgodzinyAkceptacja === "zaakceptowane" ? sum + godziny : sum;
+        }
+        return sum + godziny;
+      }, 0).toFixed(2);
+
+      stopka.innerHTML = `<tr><td colspan="5"><strong>Razem</strong></td><td colspan="2"><strong>${suma}</strong></td></tr>`;
+    }
+
+    function nadgodzinyStatus(row) {
+      switch (row.nadgodzinyAkceptacja) {
+        case "zaakceptowane":
+          return "<span class='green'>Zaakceptowano</span>";
+        case "odrzucone":
+          return "<span class='red'>Odrzucono</span>";
+        default:
+          return `
+            <button onclick="akceptuj('${row.id}')">Akceptuj</button>
+            <button onclick="odrzuc('${row.id}')">Odrzuć</button>
+          `;
+      }
     }
 
     window.zapisz = async function (id, pole, wartosc) {
@@ -157,9 +182,20 @@
       dane[pole] = wartosc;
       if (dane.start && dane.end) {
         dane.godziny = obliczGodziny(dane.start, dane.end);
+        dane.nadgodzinyAkceptacja = parseFloat(dane.godziny) > 8 ? "oczekujące" : "";
       }
 
       await docRef.set(dane);
+      location.reload();
+    }
+
+    window.akceptuj = async function(id) {
+      await db.collection("godziny").doc(id).update({ nadgodzinyAkceptacja: "zaakceptowane" });
+      location.reload();
+    }
+
+    window.odrzuc = async function(id) {
+      await db.collection("godziny").doc(id).update({ nadgodzinyAkceptacja: "odrzucone" });
       location.reload();
     }
 
@@ -177,7 +213,8 @@
         Data: r.data,
         Start: r.start,
         Koniec: r.end,
-        Godziny: r.godziny
+        Godziny: r.godziny,
+        Nadgodziny: parseFloat(r.godziny) > 8 ? r.nadgodzinyAkceptacja : "-"
       }));
       const ws = XLSX.utils.json_to_sheet(daneDoEksportu);
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
