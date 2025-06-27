@@ -97,8 +97,9 @@
 </head>
 <body>
   <h1>Panel Kierownika</h1>
+
   <div>
-    <label>Pracownik:</label>
+    <label>Login:</label>
     <select id="filterLogin">
       <option value="">-- Wszyscy --</option>
     </select>
@@ -113,7 +114,7 @@
   <table>
     <thead>
       <tr>
-        <th>Pracownik</th>
+        <th>Login</th>
         <th>Data</th>
         <th>Start</th>
         <th>Koniec</th>
@@ -143,45 +144,38 @@
     const stopka = document.getElementById("stopka");
     const exportBtn = document.getElementById("exportBtn");
     let daneWidoczne = [];
-    let mapaNazwisk = {}; // login => "Imie Nazwisko"
 
     function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":".map(Number));
-      const [eh, em] = end.split(":".map(Number));
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
       const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
       return diff > 0 ? diff.toFixed(2) : "0.00";
     }
 
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
+
       const doc = await db.collection("users").doc(user.email).get();
       const data = doc.data();
       if (!data || !data.rola) return location.href = "index.html";
 
       let rola = data.rola;
-      if (typeof rola === "string") rola = [rola];
+      if (typeof rola === "string") {
+        rola = [rola];
+      }
       rola = rola.map(r => r.trim().toLowerCase());
       if (!rola.includes("kierownik")) return location.href = "index.html";
 
       const podwladni = data.podwladni || [];
 
-      // Pobierz dane pracowników z kolekcji "uzytkownicy"
-      const uzytkownicySnapshot = await db.collection("uzytkownicy").get();
-      uzytkownicySnapshot.docs.forEach(doc => {
-        const u = doc.data();
-        mapaNazwisk[doc.id] = `${u.imie || ""} ${u.nazwisko || ""}`.trim();
-      });
-
-      // Wypełnij select
       const select = document.getElementById("filterLogin");
       podwladni.forEach(login => {
         const option = document.createElement("option");
         option.value = login;
-        option.textContent = mapaNazwisk[login] || login;
+        option.textContent = login;
         select.appendChild(option);
       });
 
-      // Pobierz wpisy godzinowe
       const snapshot = await db.collection("godziny").get();
       daneWidoczne = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -197,22 +191,22 @@
 
       dane.forEach(row => {
         const status = row.status || (parseFloat(row.godziny) > 8 ? "oczekuje" : "zaakceptowane");
-        const kolor = status === "zaakceptowane" ? "status-green" :
-                      status === "odrzucone" ? "status-red" : "status-yellow";
-        const pelnaNazwa = mapaNazwisk[row.login] || row.login;
+        const kolor =
+          status === "zaakceptowane" ? "status-green" :
+          status === "odrzucone" ? "status-red" : "status-yellow";
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${pelnaNazwa}</td>
+          <td>${row.login}</td>
           <td>${row.data}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${parseFloat(row.godziny) > 8 && status === "odrzucone" ? "8.00" : row.godziny}</td>
           <td class="${kolor}">${status}</td>
           <td>
-            ${parseFloat(row.godziny) > 8 ? `
+            ${parseFloat(row.godziny) > 8 && status !== "zaakceptowane" ? `
               <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuc</button>
+              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
             ` : ""}
           </td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
@@ -268,7 +262,7 @@
       const login = document.getElementById("filterLogin").value.trim().toLowerCase();
       const data = document.getElementById("filterDate").value;
       const wynik = daneWidoczne.filter(r =>
-        (login === "" || r.login.toLowerCase() === login) &&
+        (login === "" || r.login.toLowerCase().includes(login)) &&
         (data === "" || r.data === data)
       );
       renderujTabele(wynik);
@@ -277,7 +271,7 @@
     exportBtn.addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
       const daneDoXLSX = daneWidoczne.map(r => ({
-        Pracownik: mapaNazwisk[r.login] || r.login,
+        Login: r.login,
         Data: r.data,
         Start: r.start,
         Koniec: r.end,
