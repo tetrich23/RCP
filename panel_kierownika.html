@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <title>Panel Kierownika</title>
+
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -16,6 +18,17 @@
     h1 {
       color: #2c3e50;
       text-align: center;
+    }
+    .filters {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    select, input[type="date"] {
+      padding: 6px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
     table {
       width: 100%;
@@ -43,19 +56,22 @@
     button:hover {
       background-color: #2980b9;
     }
-    .pending {
-      background-color: #fff3cd;
-    }
-    .approved {
-      background-color: #d4edda;
-    }
-    .rejected {
-      background-color: #f8d7da;
-    }
   </style>
 </head>
 <body>
+
   <h1>Panel Kierownika</h1>
+
+  <div class="filters">
+    <select id="filterLogin">
+      <option value="">Wszyscy pracownicy</option>
+    </select>
+    <input type="date" id="filterOd">
+    <input type="date" id="filterDo">
+    <button onclick="filtruj()">Filtruj</button>
+    <button onclick="resetujFiltry()">Reset</button>
+  </div>
+
   <button id="exportBtn">Eksportuj do Excela</button>
 
   <table>
@@ -79,7 +95,7 @@
       apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
       authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
       projectId: "rejestracja-czasu-pracy-e345e",
-      storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
+      storageBucket: "rejestracja-czasu-pracy-e345e.firebasestorage.app",
       messagingSenderId: "198373663295",
       appId: "1:198373663295:web:a2a07384d8814101254e8a",
       measurementId: "G-6CG743TGTS"
@@ -87,11 +103,12 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
     const tabela = document.getElementById("tabela");
     const stopka = document.getElementById("stopka");
     const exportBtn = document.getElementById("exportBtn");
+
     let daneWidoczne = [];
+    let wszystkieDane = [];
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
@@ -118,14 +135,46 @@
       }
 
       const podwladni = userData.podwladni || [];
-      const snapshot = await db.collection("godziny").get();
 
-      daneWidoczne = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(entry => podwladni.includes(entry.login));
+      const snapshot = await db.collection("godziny").get();
+      wszystkieDane = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+                                   .filter(entry => podwladni.includes(entry.login));
+
+      uzupelnijSelectPracownik(podwladni);
+      renderujTabele(wszystkieDane);
+    });
+
+    function uzupelnijSelectPracownik(podwladni) {
+      const select = document.getElementById("filterLogin");
+      podwladni.forEach(login => {
+        const opt = document.createElement("option");
+        opt.value = login;
+        opt.textContent = login;
+        select.appendChild(opt);
+      });
+    }
+
+    function filtruj() {
+      const login = document.getElementById("filterLogin").value;
+      const od = document.getElementById("filterOd").value;
+      const doD = document.getElementById("filterDo").value;
+
+      daneWidoczne = wszystkieDane.filter(entry => {
+        const data = entry.data;
+        return (!login || entry.login === login) &&
+               (!od || data >= od) &&
+               (!doD || data <= doD);
+      });
 
       renderujTabele(daneWidoczne);
-    });
+    }
+
+    function resetujFiltry() {
+      document.getElementById("filterLogin").value = "";
+      document.getElementById("filterOd").value = "";
+      document.getElementById("filterDo").value = "";
+      renderujTabele(wszystkieDane);
+    }
 
     function renderujTabele(dane) {
       tabela.innerHTML = "";
@@ -135,25 +184,7 @@
 
       dane.forEach(row => {
         const tr = document.createElement("tr");
-        const status = row.status || "";
-
-        let statusClass = "";
-        if (status === "oczekuje") statusClass = "pending";
-        else if (status === "zaakceptowane") statusClass = "approved";
-        else if (status === "odrzucone") statusClass = "rejected";
-
-        let statusCell = `<td class="${statusClass}">${status || "-"}</td>`;
-        let akcjeCell = `<button onclick="usun('${row.id}')">Usuń</button>`;
-
-        const godziny = parseFloat(row.godziny || 0);
-
-        if (godziny > 8 && status !== "zaakceptowane" && status !== "odrzucone") {
-          statusCell = `<td class="${statusClass}">oczekuje</td>`;
-          akcjeCell += `
-            <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-            <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-          `;
-        }
+        const status = parseFloat(row.godziny) > 8 ? (row.akceptacja || "oczekuje") : "OK";
 
         tr.innerHTML = `
           <td>${row.login}</td>
@@ -161,8 +192,13 @@
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${row.godziny}</td>
-          ${statusCell}
-          <td>${akcjeCell}</td>
+          <td>${status}</td>
+          <td>
+            ${status === "oczekuje" ? `
+              <button onclick="zaakceptuj('${row.id}')">Akceptuj</button>
+              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
+            ` : `<button onclick="usun('${row.id}')">Usuń</button>`}
+          </td>
         `;
         tabela.appendChild(tr);
       });
@@ -184,16 +220,30 @@
 
       dane[pole] = wartosc;
       if (dane.start && dane.end) {
-        const noweGodziny = obliczGodziny(dane.start, dane.end);
-        dane.godziny = noweGodziny;
-
-        if (parseFloat(noweGodziny) > 8) {
-          dane.status = "oczekuje";
+        dane.godziny = obliczGodziny(dane.start, dane.end);
+        if (parseFloat(dane.godziny) > 8) {
+          dane.akceptacja = "oczekuje";
         } else {
-          dane.status = "zaakceptowane";
+          dane.akceptacja = null;
         }
       }
 
+      await docRef.set(dane);
+      location.reload();
+    }
+
+    window.zaakceptuj = async function(id) {
+      await db.collection("godziny").doc(id).update({ akceptacja: "zaakceptowane" });
+      location.reload();
+    }
+
+    window.odrzuc = async function(id) {
+      const docRef = db.collection("godziny").doc(id);
+      const docSnap = await docRef.get();
+      const dane = docSnap.data();
+
+      dane.akceptacja = "odrzucone";
+      dane.godziny = "8.00";
       await docRef.set(dane);
       location.reload();
     }
@@ -205,22 +255,6 @@
       }
     }
 
-    window.zatwierdz = async function(id) {
-      const ref = db.collection("godziny").doc(id);
-      await ref.update({ status: "zaakceptowane" });
-      location.reload();
-    }
-
-    window.odrzuc = async function(id) {
-      const ref = db.collection("godziny").doc(id);
-      const snap = await ref.get();
-      const data = snap.data();
-      data.status = "odrzucone";
-      if (parseFloat(data.godziny) > 8) data.godziny = "8.00";
-      await ref.set(data);
-      location.reload();
-    }
-
     exportBtn.addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
       const daneDoEksportu = daneWidoczne.map(r => ({
@@ -229,7 +263,7 @@
         Start: r.start,
         Koniec: r.end,
         Godziny: r.godziny,
-        Status: r.status || "-"
+        Status: r.akceptacja || (parseFloat(r.godziny) > 8 ? "oczekuje" : "OK")
       }));
       const ws = XLSX.utils.json_to_sheet(daneDoEksportu);
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
