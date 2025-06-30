@@ -19,6 +19,7 @@
       justify-content: center;
       height: 100vh;
     }
+
     .login-box, .role-box {
       background-color: rgba(255, 255, 255, 0.95);
       padding: 40px;
@@ -28,6 +29,7 @@
       max-width: 400px;
       text-align: center;
     }
+
     input, button {
       width: 100%;
       padding: 12px;
@@ -36,15 +38,30 @@
       border-radius: 6px;
       border: 1px solid #ccc;
     }
+
     button {
       background-color: #007bff;
       color: white;
       border: none;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #0056b3;
     }
+
+    .btn-back {
+      background-color: #6c757d;
+      color: white;
+      font-size: 14px;
+      padding: 10px;
+      width: 50%;
+    }
+
+    .btn-back:hover {
+      background-color: #5a6268;
+    }
+
     .hidden {
       display: none;
     }
@@ -61,94 +78,93 @@
   <div class="role-box hidden" id="roleBox">
     <h2>Wybierz rolę</h2>
     <div id="roleButtons"></div>
-    <button onclick="powrotDoLogowania()">Wyloguj</button>
+    <button class="btn-back" onclick="powrotDoLogowania()">Powrót</button>
   </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-    authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-    projectId: "rejestracja-czasu-pracy-e345e",
-    storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
-    messagingSenderId: "198373663295",
-    appId: "1:198373663295:web:a2a07384d8814101254e8a",
-    measurementId: "G-6CG743TGTS"
-  };
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+      projectId: "rejestracja-czasu-pracy-e345e",
+      storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
+      messagingSenderId: "198373663295",
+      appId: "1:198373663295:web:a2a07384d8814101254e8a",
+      measurementId: "G-6CG743TGTS"
+    };
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  async function zaloguj() {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+    async function zaloguj() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
 
-    try {
-      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-      const user = userCredential.user;
+      try {
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-      const doc = await db.collection("users").doc(user.email).get();
-      if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
+        const doc = await db.collection("users").doc(user.email).get();
+        if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
 
-      let rola = doc.data().rola;
-      if (!rola) return alert("Brak przypisanej roli");
+        let rola = doc.data().rola;
+        if (!rola) return alert("Brak przypisanej roli");
 
-      if (typeof rola === 'string') {
-        rola = [rola];
+        if (typeof rola === 'string') {
+          rola = [rola];
+        }
+
+        rola = rola.map(r => r.trim().toLowerCase());
+
+        localStorage.setItem("login", user.email);
+        localStorage.setItem("rolaArray", JSON.stringify(rola));
+
+        if (rola.length === 1) {
+          przekierujDoPanelu(rola[0]);
+        } else {
+          document.getElementById("loginBox").classList.add("hidden");
+          const roleBox = document.getElementById("roleBox");
+          const roleButtons = document.getElementById("roleButtons");
+          roleButtons.innerHTML = "";
+
+          rola.forEach(r => {
+            const btn = document.createElement("button");
+            btn.textContent = r.charAt(0).toUpperCase() + r.slice(1);
+            btn.onclick = () => przekierujDoPanelu(r);
+            roleButtons.appendChild(btn);
+          });
+
+          roleBox.classList.remove("hidden");
+        }
+
+      } catch (error) {
+        console.error("Błąd logowania:", error);
+        alert("Błędny email lub hasło");
       }
+    }
 
-      rola = rola.map(r => r.trim().toLowerCase());
-
-      localStorage.setItem("login", user.email);
-      localStorage.setItem("rolaArray", JSON.stringify(rola));
-
-      if (rola.length === 1) {
-        przekierujDoPanelu(rola[0]);
-      } else {
-        document.getElementById("loginBox").classList.add("hidden");
-        const roleBox = document.getElementById("roleBox");
-        const roleButtons = document.getElementById("roleButtons");
-        roleButtons.innerHTML = "";
-
-        rola.forEach(r => {
-          const btn = document.createElement("button");
-          btn.textContent = r.charAt(0).toUpperCase() + r.slice(1);
-          btn.onclick = () => przekierujDoPanelu(r);
-          roleButtons.appendChild(btn);
-        });
-
-        roleBox.classList.remove("hidden");
+    function przekierujDoPanelu(rola) {
+      localStorage.setItem("rola", rola);
+      switch (rola) {
+        case "admin": window.location.href = "admin.html"; break;
+        case "kierownik": window.location.href = "panel_kierownika.html"; break;
+        case "pracownik": window.location.href = "employee.html"; break;
+        case "dyrektor": window.location.href = "Dyrektor.html"; break;
+        default:
+          alert("Nieznana rola: " + rola);
       }
-
-    } catch (error) {
-      console.error("Błąd logowania:", error);
-      alert("Błędny email lub hasło");
     }
-  }
 
-  function przekierujDoPanelu(rola) {
-    localStorage.setItem("rola", rola);
-    switch (rola) {
-      case "admin": window.location.href = "admin.html"; break;
-      case "kierownik": window.location.href = "panel_kierownika.html"; break;
-      case "pracownik": window.location.href = "employee.html"; break;
-      case "dyrektor": window.location.href = "Dyrektor.html"; break;
-      default:
-        alert("Nieznana rola: " + rola);
+    function powrotDoLogowania() {
+      document.getElementById("roleBox").classList.add("hidden");
+      document.getElementById("loginBox").classList.remove("hidden");
+      document.getElementById("email").focus();
     }
-  }
 
-  function powrotDoLogowania() {
-    document.getElementById("roleBox").classList.add("hidden");
-    document.getElementById("loginBox").classList.remove("hidden");
-    document.getElementById("email").focus();
-  }
-
-  // Obsługa logowania po naciśnięciu Enter
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") {
-      zaloguj();
-    }
-  });
-</script>
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        zaloguj();
+      }
+    });
+  </script>
 </body>
 </html>
