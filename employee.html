@@ -200,7 +200,7 @@
       XLSX.writeFile(wb, "moje_godziny.xlsx");
     }
 
-    function drukuj() {
+   function drukuj() {
   const printWindow = window.open('', '', 'height=600,width=800');
   printWindow.document.write('<html><head><title>Drukuj godziny</title>');
   printWindow.document.write(`
@@ -236,12 +236,17 @@
   printWindow.document.write('<tr><th>Data</th><th>Godzina przyjścia</th><th>Godzina wyjścia</th><th>Godziny</th></tr>');
 
   zapisaneDane.forEach(row => {
+    const godzinyDziesietnie = parseFloat(row.godziny);
+    const godziny = Math.floor(godzinyDziesietnie);
+    const minuty = Math.round((godzinyDziesietnie - godziny) * 60);
+    const sformatowaneGodziny = `${godziny}h ${minuty}min`;
+
     printWindow.document.write(`
       <tr>
         <td>${row.data}</td>
         <td>${row.start}</td>
         <td>${row.end}</td>
-        <td>${row.godziny}</td>
+        <td>${sformatowaneGodziny}</td>
       </tr>
     `);
   });
@@ -251,6 +256,7 @@
   printWindow.document.close();
   printWindow.print();
 }
+
   </script>
 </body>
 </html>
