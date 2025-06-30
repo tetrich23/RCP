@@ -7,126 +7,110 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-body {
   <style>
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    padding: 20px;
-    background: linear-gradient(to right, #eef2f3, #f6f8fa);
-    color: #333;
-  }
-
-  h1 {
-    text-align: center;
-    margin-bottom: 30px;
-    color: #1e3c72;
-  }
-
-  label {
-    font-weight: 500;
-    margin-right: 10px;
-  }
-
-  select {
-    margin-left: 6px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    background: #fff;
-    transition: border-color 0.3s;
-  }
-
-  select:hover {
-    border-color: #1e90ff;
-  }
-
-  button {
-    padding: 8px 16px;
-    margin-top: 10px;
-    margin-left: 10px;
-    background-color: #1e90ff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-  }
-
-  button:hover {
-    background-color: #167ac6;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-  }
-
-  th {
-    background-color: #f1f4f9;
-    padding: 10px;
-    font-size: 14px;
-    border-bottom: 1px solid #e0e0e0;
-  }
-
-  td {
-    padding: 10px;
-    font-size: 14px;
-    text-align: center;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  td[contenteditable] {
-    background-color: #fcfcfc;
-    border: 1px dashed transparent;
-    transition: background-color 0.2s, border-color 0.2s;
-  }
-
-  td[contenteditable]:hover {
-    background-color: #f2f9ff;
-    border-color: #cce4ff;
-  }
-
-  td[contenteditable]:focus {
-    outline: none;
-    border: 1px solid #1e90ff;
-    background-color: #eaf4ff;
-  }
-
-  tfoot td {
-    font-weight: bold;
-    background-color: #f1f4f9;
-  }
-
-  @media (max-width: 768px) {
-    table, thead, tbody, th, td, tr {
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: linear-gradient(to right, #e9eff5, #fdfdfd);
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background-color: white;
+    }
+    th {
+      background-color: #f5f7fa;
+      padding: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
       font-size: 13px;
     }
-
-    select, button {
-      margin-top: 10px;
+    td {
+      padding: 10px;
+      border-top: 1px solid #e0e6ed;
+      text-align: center;
+      font-size: 14px;
+    }
+    td[contenteditable] {
+      background-color: #f9fcff;
+    }
+    .status-green {
+      background-color: #e0f4e6;
+      color: #2e7d32;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-red {
+      background-color: #fbeaea;
+      color: #c0392b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-yellow {
+      background-color: #fff7e0;
+      color: #b8860b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .actions button {
+      margin: 2px;
+      padding: 6px 10px;
       font-size: 13px;
     }
-  }
-</style>
+  </style>
 </head>
 <body>
   <h1>Panel Kierownika</h1>
+
   <div>
     <label>Login:</label>
     <select id="filterLogin">
       <option value="">-- Wszyscy --</option>
     </select>
+
     <label>Data:</label>
     <input type="date" id="filterDate">
+
     <button onclick="filtruj()">Filtruj</button>
     <button id="exportBtn">Eksportuj do Excela</button>
   </div>
+
   <table>
     <thead>
       <tr>
@@ -161,12 +145,12 @@ body {
     const exportBtn = document.getElementById("exportBtn");
     let daneWidoczne = [];
 
-    const domyslnaNorma = 8;
-    const login10h = ["p.haczkiewicz@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "a.krzon@naszprad.com"];
+    // Lista loginów pracowników z normą 10h
+    const login10h = ["anna@firma.pl", "adam@firma.pl", "karol@firma.pl"];
 
     function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":".map(Number));
-      const [eh, em] = end.split(":".map(Number));
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
       const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
       return diff > 0 ? diff.toFixed(2) : "0.00";
     }
@@ -179,11 +163,14 @@ body {
       if (!data || !data.rola) return location.href = "index.html";
 
       let rola = data.rola;
-      if (typeof rola === "string") rola = [rola];
+      if (typeof rola === "string") {
+        rola = [rola];
+      }
       rola = rola.map(r => r.trim().toLowerCase());
       if (!rola.includes("kierownik")) return location.href = "index.html";
 
       const podwladni = data.podwladni || [];
+
       const select = document.getElementById("filterLogin");
       podwladni.forEach(login => {
         const option = document.createElement("option");
@@ -200,25 +187,32 @@ body {
       renderujTabele(daneWidoczne);
     });
 
+    function getNorma(login) {
+      return login10h.includes(login.toLowerCase()) ? 10 : 8;
+    }
+
     function renderujTabele(dane) {
       tabela.innerHTML = "";
       stopka.innerHTML = "";
       dane.sort((a, b) => new Date(b.data) - new Date(a.data));
 
       dane.forEach(row => {
-        const norma = login10h.includes(row.login) ? 10 : domyslnaNorma;
+        const norma = getNorma(row.login);
         const status = row.status || (parseFloat(row.godziny) > norma ? "oczekuje" : "zaakceptowane");
         const kolor =
           status === "zaakceptowane" ? "status-green" :
           status === "odrzucone" ? "status-red" : "status-yellow";
 
         const tr = document.createElement("tr");
+        const godzinyDoWyswietlenia =
+          parseFloat(row.godziny) > norma && status === "odrzucone" ? norma.toFixed(2) : row.godziny;
+
         tr.innerHTML = `
           <td>${row.login}</td>
           <td>${row.data}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
-          <td>${parseFloat(row.godziny) > norma && status === "odrzucone" ? norma.toFixed(2) : row.godziny}</td>
+          <td>${godzinyDoWyswietlenia}</td>
           <td class="${kolor}">${status}</td>
           <td>
             ${parseFloat(row.godziny) > norma && status !== "zaakceptowane" ? `
@@ -232,7 +226,7 @@ body {
       });
 
       const suma = dane.reduce((sum, r) => {
-        const norma = login10h.includes(r.login) ? 10 : domyslnaNorma;
+        const norma = getNorma(r.login);
         let godz = parseFloat(r.godziny || 0);
         if (godz > norma && r.status === "odrzucone") godz = norma;
         return sum + godz;
@@ -263,7 +257,7 @@ body {
     async function odrzuc(id) {
       const doc = await db.collection("godziny").doc(id).get();
       const dane = doc.data();
-      const norma = login10h.includes(dane.login) ? 10 : domyslnaNorma;
+      const norma = getNorma(dane.login);
       dane.status = "odrzucone";
       if (parseFloat(dane.godziny) > norma) dane.godziny = norma.toFixed(2);
       await db.collection("godziny").doc(id).set(dane);
@@ -290,7 +284,7 @@ body {
     exportBtn.addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
       const daneDoXLSX = daneWidoczne.map(r => {
-        const norma = login10h.includes(r.login) ? 10 : domyslnaNorma;
+        const norma = getNorma(r.login);
         return {
           Login: r.login,
           Data: r.data,
@@ -298,7 +292,7 @@ body {
           Koniec: r.end,
           Godziny: r.status === "odrzucone" && parseFloat(r.godziny) > norma ? norma.toFixed(2) : r.godziny,
           Status: r.status || "zaakceptowane"
-        }
+        };
       });
       const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
