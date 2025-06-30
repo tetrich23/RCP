@@ -4,12 +4,9 @@
   <meta charset="UTF-8">
   <title>Panel RCP</title>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-  <!-- XLSX do eksportu -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
   <style>
@@ -41,14 +38,13 @@
       border-color: #1e90ff;
     }
     button {
-      padding: 8px 16px;
-      margin-top: 10px;
-      margin-left: 10px;
+      padding: 6px 10px;
+      margin: 2px;
       background-color: #1e90ff;
       color: white;
       border: none;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       cursor: pointer;
       transition: background-color 0.3s;
     }
@@ -79,7 +75,6 @@
     td[contenteditable] {
       background-color: #fcfcfc;
       border: 1px dashed transparent;
-      transition: background-color 0.2s, border-color 0.2s;
     }
     td[contenteditable]:hover {
       background-color: #f2f9ff;
@@ -127,7 +122,7 @@
       <th>Start</th>
       <th>Koniec</th>
       <th>Godziny</th>
-      <th>Akcje</th>
+      <th>Akcje / Status</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -139,7 +134,7 @@
     apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
     authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
     projectId: "rejestracja-czasu-pracy-e345e",
-    storageBucket: "rejestracja-czasu-pracy-e345e.firebasestorage.app",
+    storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
     messagingSenderId: "198373663295",
     appId: "1:198373663295:web:a2a07384d8814101254e8a",
     measurementId: "G-6CG743TGTS"
@@ -174,6 +169,10 @@
 
   async function wczytaj() {
     try {
+      const user = firebase.auth().currentUser;
+      const token = await user.getIdTokenResult();
+      const rola = token.claims?.rola || "brak";
+
       const snapshot = await db.collection("godziny").get();
       const wszystkieDane = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -183,7 +182,8 @@
           data: data.data || "",
           start: data.start || "",
           end: data.end || "",
-          godziny: data.godziny || obliczGodziny(data.start, data.end)
+          godziny: data.godziny || obliczGodziny(data.start, data.end),
+          statusNadgodzin: data.statusNadgodzin || "oczekujące"
         };
       });
 
@@ -208,13 +208,22 @@
       tabelaBody.innerHTML = "";
       aktualneDane.forEach(dane => {
         const tr = document.createElement("tr");
+
+        const akcjeHTML = `
+          <button onclick="usunRekord('${dane.id}')">Usuń</button>
+          ${rola === "admin" ? `
+            <button onclick="zmienStatus('${dane.id}', 'zaakceptowane')">Akceptuj</button>
+            <button onclick="zmienStatus('${dane.id}', 'odrzucone')">Odrzuć</button>
+          ` : ""}
+        `;
+
         tr.innerHTML = `
           <td>${dane.login}</td>
           <td>${dane.data}</td>
           <td contenteditable onblur="zapiszZmiane('${dane.id}','start',this.innerText)">${dane.start}</td>
           <td contenteditable onblur="zapiszZmiane('${dane.id}','end',this.innerText)">${dane.end}</td>
           <td class="godziny">${dane.godziny}</td>
-          <td><button onclick="usunRekord('${dane.id}')">Usuń</button></td>
+          <td>${akcjeHTML}<br>Status: <strong>${dane.statusNadgodzin}</strong></td>
         `;
         tabelaBody.appendChild(tr);
       });
@@ -261,6 +270,16 @@
     }
   }
 
+  async function zmienStatus(id, nowyStatus) {
+    try {
+      await db.collection("godziny").doc(id).update({ statusNadgodzin: nowyStatus });
+      wczytaj();
+    } catch (e) {
+      alert("Błąd zmiany statusu");
+      console.error(e);
+    }
+  }
+
   exportBtn.addEventListener("click", () => {
     const wb = XLSX.utils.book_new();
 
@@ -276,31 +295,14 @@
       Data: row.data,
       Start: row.start,
       Koniec: row.end,
-      Godziny: row.godziny
+      Godziny: row.godziny,
+      Status: row.statusNadgodzin
     }));
 
     const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu, {
-      header: ["Login", "Data", "Start", "Koniec", "Godziny"]
+      header: ["Login", "Data", "Start", "Koniec", "Godziny", "Status"]
     });
     XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
-
-    const daneDoRaportu = danePosortowane.map(row => {
-      const kodPracownika = row.login.split("@")[0];
-      return {
-        "Kod pracownika": kodPracownika,
-        "Data": row.data,
-        "Rodzaj czasu": "PRACA",
-        "Od godziny": row.start,
-        "Do godziny": row.end,
-        "Liczba godzin": row.godziny,
-        "Opis": "Ewidencja RCP"
-      };
-    });
-
-    const ws2 = XLSX.utils.json_to_sheet(daneDoRaportu, {
-      header: ["Kod pracownika", "Data", "Rodzaj czasu", "Od godziny", "Do godziny", "Liczba godzin", "Opis"]
-    });
-    XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
 
     XLSX.writeFile(wb, "raport_miesieczny.xlsx");
   });
@@ -309,6 +311,7 @@
   filterMonth.addEventListener("change", wczytaj);
   window.zapiszZmiane = zapiszZmiane;
   window.usunRekord = usunRekord;
+  window.zmienStatus = zmienStatus;
 </script>
 
 </body>
