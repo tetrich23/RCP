@@ -8,12 +8,12 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
- <style>
+<style>
   body {
     margin: 0;
     font-family: 'Roboto', sans-serif;
-    background-color: #f5f7fa;
-    color: #333;
+    background-color: #0f1115;
+    color: #e0e0e0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -21,75 +21,79 @@
   }
 
   .container {
-    background-color: #ffffff;
+    background-color: #1a1c22;
     padding: 40px 30px;
-    border-radius: 10px;
+    border-radius: 12px;
     max-width: 480px;
     width: 100%;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
   }
 
   h2 {
     text-align: center;
     margin-bottom: 24px;
-    color: #2c3e50;
+    color: #00d1b2;
     font-weight: 700;
+    letter-spacing: 0.5px;
   }
 
   label {
     display: block;
-    margin: 12px 0 6px;
+    margin: 14px 0 6px;
     font-weight: 500;
-    color: #444;
+    color: #b0b0b0;
   }
 
   input {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px 14px;
     margin-bottom: 12px;
-    border: 1px solid #ccc;
+    border: none;
     border-radius: 6px;
+    background-color: #2a2d34;
+    color: #f1f1f1;
     font-size: 15px;
-    transition: border-color 0.2s;
+    transition: box-shadow 0.2s;
   }
 
   input:focus {
-    border-color: #3498db;
     outline: none;
+    box-shadow: 0 0 0 2px #00d1b2;
   }
 
   button {
     width: 100%;
     padding: 12px;
     margin-top: 10px;
-    background-color: #3498db;
+    background-color: #00bfa6;
     border: none;
     border-radius: 6px;
     font-size: 16px;
-    color: white;
+    color: #fff;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.1s;
   }
 
   button:hover {
-    background-color: #2980b9;
+    background-color: #00a893;
+    transform: translateY(-1px);
   }
 
   #lista {
     margin-top: 30px;
     max-height: 220px;
     overflow-y: auto;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #2d2f36;
     padding-top: 10px;
   }
 
   .entry {
-    background-color: #ecf0f1;
+    background-color: #23262c;
     padding: 10px 15px;
     margin-bottom: 10px;
     border-radius: 6px;
-    color: #2c3e50;
+    color: #ccc;
     font-size: 14px;
     font-family: monospace;
   }
@@ -97,7 +101,7 @@
   #loginDisplay {
     text-align: center;
     font-size: 14px;
-    color: #666;
+    color: #888;
     margin-bottom: 20px;
   }
 </style>
