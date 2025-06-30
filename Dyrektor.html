@@ -8,7 +8,112 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* Stylizacja pominięta dla czytelności - pozostaje bez zmian */
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 40px 20px;
+    background: linear-gradient(to right, #e9eff5, #fdfdfd);
+    color: #333;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    margin-bottom: 30px;
+    color: #2c3e50;
+  }
+
+  input, select, button {
+    margin: 5px;
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  input:focus, select:focus {
+    border-color: #007bff;
+  }
+
+  button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  button:hover {
+    background-color: #0056b3;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 30px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  th {
+    background-color: #f5f7fa;
+    padding: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 13px;
+    color: #4a4a4a;
+  }
+
+  td {
+    padding: 10px;
+    border-top: 1px solid #e0e6ed;
+    text-align: center;
+    font-size: 14px;
+    color: #333;
+  }
+
+  td[contenteditable] {
+    background-color: #f9fcff;
+  }
+
+  .status-green {
+    background-color: #e0f4e6;
+    color: #2e7d32;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+  }
+
+  .status-red {
+    background-color: #fbeaea;
+    color: #c0392b;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+  }
+
+  .status-yellow {
+    background-color: #fff7e0;
+    color: #b8860b;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 6px;
+    display: inline-block;
+  }
+
+  .actions button {
+    margin: 2px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
   </style>
 </head>
 <body>
