@@ -56,7 +56,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
   authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-  projectId: "rejestracja-czasu-pracy-e345e"
+  projectId: "rejestracja-czasu-pracy-e345e",
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -180,33 +180,36 @@ async function usunRekord(id) {
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
-  const daneDoEksportu = [...aktualneDane]
-    .sort((a, b) => a.nazwisko.localeCompare(b.nazwisko, 'pl'))
-    .map(row => ({
-      Pracownik: row.nazwisko,
-      Data: row.data,
-      Start: row.start,
-      Koniec: row.end,
-      Godziny: formatGodzinyLudzkie(row.godziny)
-    }));
+  // Sortowanie alfabetyczne + po dacie rosnąco
+  const posortowane = [...aktualneDane].sort((a, b) => {
+    const nazwiskoPorownanie = a.nazwisko.localeCompare(b.nazwisko, 'pl');
+    if (nazwiskoPorownanie !== 0) return nazwiskoPorownanie;
+    return new Date(a.data) - new Date(b.data);
+  });
+
+  const daneDoEksportu = posortowane.map(row => ({
+    Pracownik: row.nazwisko,
+    Data: row.data,
+    Start: row.start,
+    Koniec: row.end,
+    Godziny: formatGodzinyLudzkie(row.godziny)
+  }));
 
   const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
   XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
 
-  const raport = [...aktualneDane]
-    .sort((a, b) => a.nazwisko.localeCompare(b.nazwisko, 'pl'))
-    .map(row => {
-      const kod = row.login.split("@")[0];
-      return {
-        "Kod pracownika": kod,
-        "Data": row.data,
-        "Rodzaj czasu": "PRACA",
-        "Od godziny": row.start,
-        "Do godziny": row.end,
-        "Liczba godzin": formatGodzinyLudzkie(row.godziny),
-        "Opis": "Ewidencja RCP"
-      };
-    });
+  const raport = posortowane.map(row => {
+    const kod = row.login.split("@")[0];
+    return {
+      "Kod pracownika": kod,
+      "Data": row.data,
+      "Rodzaj czasu": "PRACA",
+      "Od godziny": row.start,
+      "Do godziny": row.end,
+      "Liczba godzin": formatGodzinyLudzkie(row.godziny),
+      "Opis": "Ewidencja RCP"
+    };
+  });
 
   const ws2 = XLSX.utils.json_to_sheet(raport);
   XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
