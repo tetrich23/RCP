@@ -63,78 +63,83 @@
     <div id="roleButtons"></div>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-      projectId: "rejestracja-czasu-pracy-e345e",
-      storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
-      messagingSenderId: "198373663295",
-      appId: "1:198373663295:web:a2a07384d8814101254e8a",
-      measurementId: "G-6CG743TGTS"
-    };
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+    authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+    projectId: "rejestracja-czasu-pracy-e345e",
+    storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
+    messagingSenderId: "198373663295",
+    appId: "1:198373663295:web:a2a07384d8814101254e8a",
+    measurementId: "G-6CG743TGTS"
+  };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    async function zaloguj() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+  async function zaloguj() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-      try {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
+    try {
+      const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+      const user = userCredential.user;
 
-        const doc = await db.collection("users").doc(user.email).get();
-        if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
+      const doc = await db.collection("users").doc(user.email).get();
+      if (!doc.exists) return alert("Nie znaleziono użytkownika w bazie");
 
-        let rola = doc.data().rola;
-        if (!rola) return alert("Brak przypisanej roli");
+      let rola = doc.data().rola;
+      if (!rola) return alert("Brak przypisanej roli");
 
-        // Znormalizuj dane do tablicy
-        if (typeof rola === 'string') {
-          rola = [rola];
-        }
-
-        rola = rola.map(r => r.trim().toLowerCase());
-
-        localStorage.setItem("login", user.email);
-        localStorage.setItem("rolaArray", JSON.stringify(rola)); // zapisz jako JSON
-
-        if (rola.length === 1) {
-          przekierujDoPanelu(rola[0]);
-        } else {
-          document.getElementById("loginBox").classList.add("hidden");
-          const roleBox = document.getElementById("roleBox");
-          const roleButtons = document.getElementById("roleButtons");
-          roleButtons.innerHTML = "";
-
-          rola.forEach(r => {
-            const btn = document.createElement("button");
-            btn.textContent = r.charAt(0).toUpperCase() + r.slice(1);
-            btn.onclick = () => przekierujDoPanelu(r);
-            roleButtons.appendChild(btn);
-          });
-
-          roleBox.classList.remove("hidden");
-        }
-
-      } catch (error) {
-        console.error("Błąd logowania:", error);
-        alert("Błędny email lub hasło");
+      if (typeof rola === 'string') {
+        rola = [rola];
       }
-    }
 
-    function przekierujDoPanelu(rola) {
-      localStorage.setItem("rola", rola);
-      switch (rola) {
-        case "admin": window.location.href = "admin.html"; break;
-        case "kierownik": window.location.href = "panel_kierownika.html"; break;
-        case "pracownik": window.location.href = "employee.html"; break;
-        default:
-          alert("Nieznana rola: " + rola);
+      rola = rola.map(r => r.trim().toLowerCase());
+
+      localStorage.setItem("login", user.email);
+      localStorage.setItem("rolaArray", JSON.stringify(rola));
+
+      if (rola.length === 1) {
+        przekierujDoPanelu(rola[0]);
+      } else {
+        document.getElementById("loginBox").classList.add("hidden");
+        const roleBox = document.getElementById("roleBox");
+        const roleButtons = document.getElementById("roleButtons");
+        roleButtons.innerHTML = "";
+
+        rola.forEach(r => {
+          const btn = document.createElement("button");
+          btn.textContent = r.charAt(0).toUpperCase() + r.slice(1);
+          btn.onclick = () => przekierujDoPanelu(r);
+          roleButtons.appendChild(btn);
+        });
+
+        roleBox.classList.remove("hidden");
       }
+
+    } catch (error) {
+      console.error("Błąd logowania:", error);
+      alert("Błędny email lub hasło");
     }
-  </script>
-</body>
-</html>
+  }
+
+  function przekierujDoPanelu(rola) {
+    localStorage.setItem("rola", rola);
+    switch (rola) {
+      case "admin": window.location.href = "admin.html"; break;
+      case "kierownik": window.location.href = "panel_kierownika.html"; break;
+      case "pracownik": window.location.href = "employee.html"; break;
+      default:
+        alert("Nieznana rola: " + rola);
+    }
+  }
+
+  // Obsługa logowania po naciśnięciu Enter
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      zaloguj();
+    }
+  });
+</script>
+
