@@ -61,6 +61,7 @@
   <div class="role-box hidden" id="roleBox">
     <h2>Wybierz rolę</h2>
     <div id="roleButtons"></div>
+    <button onclick="powrotDoLogowania()">Powrót</button>
   </div>
 
 <script>
@@ -136,6 +137,12 @@
     }
   }
 
+  function powrotDoLogowania() {
+    document.getElementById("roleBox").classList.add("hidden");
+    document.getElementById("loginBox").classList.remove("hidden");
+    document.getElementById("email").focus();
+  }
+
   // Obsługa logowania po naciśnięciu Enter
   document.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
@@ -143,4 +150,5 @@
     }
   });
 </script>
-
+</body>
+</html>
