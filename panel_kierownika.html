@@ -15,307 +15,210 @@
       background: linear-gradient(to right, #e9eff5, #fdfdfd);
       color: #333;
     }
-    h1 {
-      text-align: center;
-      font-size: 28px;
-      margin-bottom: 10px;
-      color: #2c3e50;
-    }
-    .logout-container {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+    h1 { text-align: center; font-size: 28px; margin-bottom: 10px; color: #2c3e50; }
+    .logout-container { text-align: center; margin-bottom: 30px; }
     input, select, button {
-      margin: 5px;
-      padding: 10px 12px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-    input:focus, select:focus {
-      border-color: #007bff;
+      margin: 5px; padding: 10px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc;
     }
     button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s;
+      background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer;
     }
-    button:hover {
-      background-color: #0056b3;
-    }
+    button:hover { background-color: #0056b3; }
     table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 30px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background-color: white;
+      width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden;
+      margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: white;
     }
-    th {
-      background-color: #f5f7fa;
-      padding: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 13px;
-    }
-    td {
-      padding: 10px;
-      border-top: 1px solid #e0e6ed;
-      text-align: center;
-      font-size: 14px;
-    }
-    td[contenteditable] {
-      background-color: #f9fcff;
-    }
-    .status-green {
-      background-color: #e0f4e6;
-      color: #2e7d32;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-red {
-      background-color: #fbeaea;
-      color: #c0392b;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-yellow {
-      background-color: #fff7e0;
-      color: #b8860b;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .actions button {
-      margin: 2px;
-      padding: 6px 10px;
-      font-size: 13px;
-    }
+    th { background-color: #f5f7fa; padding: 12px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
+    td { padding: 10px; border-top: 1px solid #e0e6ed; text-align: center; font-size: 14px; }
+    .status-green { background-color: #e0f4e6; color: #2e7d32; font-weight: 600; border-radius: 4px; }
+    .status-red { background-color: #fbeaea; color: #c0392b; font-weight: 600; border-radius: 4px; }
+    .status-yellow { background-color: #fff7e0; color: #b8860b; font-weight: 600; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <h1>Panel Kierownika</h1>
-  <div class="logout-container">
-    <button onclick="wyloguj()">Wyloguj</button>
-  </div>
+<h1>Panel Kierownika</h1>
+<div class="logout-container"><button onclick="wyloguj()">Wyloguj</button></div>
 
-  <div>
-    <label>Login:</label>
-    <select id="filterLogin">
-      <option value="">-- Wszyscy --</option>
-    </select>
+<div>
+  <label>Pracownik:</label>
+  <select id="filterLogin"><option value="">-- Wszyscy --</option></select>
+  <label>Data:</label>
+  <input type="date" id="filterDate">
+  <button onclick="filtruj()">Filtruj</button>
+  <button id="exportBtn">Eksportuj do Excela</button>
+</div>
 
-    <label>Data:</label>
-    <input type="date" id="filterDate">
+<table>
+  <thead>
+    <tr>
+      <th>Pracownik</th><th>Data</th><th>Start</th><th>Koniec</th><th>Godziny</th><th>Status</th><th>Akcja</th><th>Usuń</th>
+    </tr>
+  </thead>
+  <tbody id="tabela"></tbody>
+  <tfoot id="stopka"></tfoot>
+</table>
 
-    <button onclick="filtruj()">Filtruj</button>
-    <button id="exportBtn">Eksportuj do Excela</button>
-  </div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+  authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+  projectId: "rejestracja-czasu-pracy-e345e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const tabela = document.getElementById("tabela");
+const stopka = document.getElementById("stopka");
+const filterSelect = document.getElementById("filterLogin");
+const exportBtn = document.getElementById("exportBtn");
+let daneWidoczne = [], mapaLoginow = {};
 
-  <table>
-    <thead>
+const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
+
+function godzinyToTekst(godziny) {
+  const liczba = parseFloat(godziny);
+  const h = Math.floor(liczba);
+  const m = Math.round((liczba - h) * 60);
+  return `${h}h ${m}min`;
+}
+
+firebase.auth().onAuthStateChanged(async user => {
+  if (!user) return location.href = "index.html";
+  const userDoc = await db.collection("users").doc(user.email).get();
+  const data = userDoc.data();
+  if (!data || !data.rola?.includes("kierownik")) return location.href = "index.html";
+
+  const podwladni = data.podwladni || [];
+  const uzytkownicySnap = await db.collection("uzytkownicy").get();
+  uzytkownicySnap.forEach(doc => {
+    const d = doc.data();
+    mapaLoginow[d.login] = `${d.imie} ${d.nazwisko}`;
+  });
+
+  podwladni.forEach(login => {
+    const option = document.createElement("option");
+    option.value = login;
+    option.textContent = mapaLoginow[login] || login;
+    filterSelect.appendChild(option);
+  });
+
+  const snapshot = await db.collection("godziny").get();
+  daneWidoczne = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(r => podwladni.includes(r.login));
+  renderujTabele(daneWidoczne);
+});
+
+function getNorma(login) {
+  return login10h.includes(login.toLowerCase()) ? 10 : 8;
+}
+
+function renderujTabele(dane) {
+  tabela.innerHTML = "";
+  stopka.innerHTML = "";
+  dane.sort((a, b) => new Date(b.data) - new Date(a.data));
+  dane.forEach(r => {
+    const norma = getNorma(r.login);
+    const status = r.status || (parseFloat(r.godziny) > norma ? "oczekuje" : "zaakceptowane");
+    const kolor = status === "zaakceptowane" ? "status-green" : status === "odrzucone" ? "status-red" : "status-yellow";
+    let godz = parseFloat(r.godziny);
+    if (status === "odrzucone" && godz > norma) godz = norma;
+    const nazwisko = mapaLoginow[r.login] || r.login;
+    tabela.innerHTML += `
       <tr>
-        <th>Login</th>
-        <th>Data</th>
-        <th>Start</th>
-        <th>Koniec</th>
-        <th>Godziny</th>
-        <th>Status</th>
-        <th>Akcja</th>
-        <th>Usuń</th>
-      </tr>
-    </thead>
-    <tbody id="tabela"></tbody>
-    <tfoot id="stopka"></tfoot>
-  </table>
+        <td>${nazwisko}</td>
+        <td>${r.data}</td>
+        <td contenteditable onblur="zapisz('${r.id}','start',this.innerText)">${r.start}</td>
+        <td contenteditable onblur="zapisz('${r.id}','end',this.innerText)">${r.end}</td>
+        <td>${godzinyToTekst(godz)}</td>
+        <td class="${kolor}">${status}</td>
+        <td>
+          ${parseFloat(r.godziny) > norma && status !== "zaakceptowane" ? `
+            <button onclick="zatwierdz('${r.id}')">Akceptuj</button>
+            <button onclick="odrzuc('${r.id}')">Odrzuć</button>
+          ` : ""}
+        </td>
+        <td><button onclick="usun('${r.id}')">🗑️</button></td>
+      </tr>`;
+  });
+  const suma = dane.reduce((sum, r) => {
+    const norma = getNorma(r.login);
+    let godz = parseFloat(r.godziny || 0);
+    if (r.status === "odrzucone" && godz > norma) godz = norma;
+    return sum + godz;
+  }, 0);
+  stopka.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${godzinyToTekst(suma)}</strong></td><td colspan="3"></td></tr>`;
+}
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-      projectId: "rejestracja-czasu-pracy-e345e"
+async function zapisz(id, pole, wartosc) {
+  if (!/^\d{2}:\d{2}$/.test(wartosc)) return alert("Nieprawidłowy format godziny");
+  const ref = db.collection("godziny").doc(id);
+  const snap = await ref.get();
+  const dane = snap.data();
+  dane[pole] = wartosc;
+  if (dane.start && dane.end) {
+    const [sh, sm] = dane.start.split(":" ).map(Number);
+    const [eh, em] = dane.end.split(":" ).map(Number);
+    dane.godziny = (((eh * 60 + em) - (sh * 60 + sm)) / 60).toFixed(2);
+  }
+  await ref.set(dane);
+  location.reload();
+}
+
+async function zatwierdz(id) {
+  await db.collection("godziny").doc(id).update({ status: "zaakceptowane" });
+  location.reload();
+}
+
+async function odrzuc(id) {
+  const ref = db.collection("godziny").doc(id);
+  const snap = await ref.get();
+  const dane = snap.data();
+  const norma = getNorma(dane.login);
+  if (parseFloat(dane.godziny) > norma) dane.godziny = norma.toFixed(2);
+  dane.status = "odrzucone";
+  await ref.set(dane);
+  location.reload();
+}
+
+async function usun(id) {
+  if (confirm("Czy na pewno usunąć?")) {
+    await db.collection("godziny").doc(id).delete();
+    location.reload();
+  }
+}
+
+function filtruj() {
+  const login = document.getElementById("filterLogin").value.trim().toLowerCase();
+  const data = document.getElementById("filterDate").value;
+  const wynik = daneWidoczne.filter(r =>
+    (login === "" || r.login.toLowerCase() === login) &&
+    (data === "" || r.data === data)
+  );
+  renderujTabele(wynik);
+}
+
+exportBtn.addEventListener("click", () => {
+  const wb = XLSX.utils.book_new();
+  const daneDoXLSX = daneWidoczne.map(r => {
+    const norma = getNorma(r.login);
+    let godz = parseFloat(r.godziny);
+    if (r.status === "odrzucone" && godz > norma) godz = norma;
+    return {
+      Pracownik: mapaLoginow[r.login] || r.login,
+      Data: r.data,
+      Start: r.start,
+      Koniec: r.end,
+      Godziny: godzinyToTekst(godz),
+      Status: r.status || "zaakceptowane"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  });
+  const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
+  XLSX.utils.book_append_sheet(wb, ws, "Godziny");
+  XLSX.writeFile(wb, "godziny_kierownik.xlsx");
+});
 
-    const tabela = document.getElementById("tabela");
-    const stopka = document.getElementById("stopka");
-    const exportBtn = document.getElementById("exportBtn");
-    let daneWidoczne = [];
-
-    const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
-
-    function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
-      const minuty = (parseInt(eh) * 60 + parseInt(em)) - (parseInt(sh) * 60 + parseInt(sm));
-      return (minuty / 60).toFixed(2);
-    }
-
-    function formatGodzinyDecToText(godzinyStr) {
-      const godzinyDziesietnie = parseFloat(godzinyStr);
-      const godziny = Math.floor(godzinyDziesietnie);
-      const minuty = Math.round((godzinyDziesietnie - godziny) * 60);
-      return `${godziny}h ${minuty}min`;
-    }
-
-    firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return location.href = "index.html";
-
-      const doc = await db.collection("users").doc(user.email).get();
-      const data = doc.data();
-      if (!data || !data.rola) return location.href = "index.html";
-
-      let rola = data.rola;
-      if (typeof rola === "string") rola = [rola];
-      rola = rola.map(r => r.trim().toLowerCase());
-      if (!rola.includes("kierownik")) return location.href = "index.html";
-
-      const podwladni = data.podwladni || [];
-
-      const select = document.getElementById("filterLogin");
-      podwladni.forEach(login => {
-        const option = document.createElement("option");
-        option.value = login;
-        option.textContent = login;
-        select.appendChild(option);
-      });
-
-      const snapshot = await db.collection("godziny").get();
-      daneWidoczne = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(r => podwladni.includes(r.login));
-
-      renderujTabele(daneWidoczne);
-    });
-
-    function getNorma(login) {
-      return login10h.includes(login.toLowerCase()) ? 10 : 8;
-    }
-
-    function renderujTabele(dane) {
-      tabela.innerHTML = "";
-      stopka.innerHTML = "";
-      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
-
-      dane.forEach(row => {
-        const norma = getNorma(row.login);
-        let status = row.status || (parseFloat(row.godziny) > norma ? "oczekuje" : "zaakceptowane");
-        const kolor =
-          status === "zaakceptowane" ? "status-green" :
-          status === "odrzucone" ? "status-red" : "status-yellow";
-
-        const godzinyRaw = parseFloat(row.godziny);
-        const godzinyDoWyswietlenia = formatGodzinyDecToText(
-          godzinyRaw > norma && status === "odrzucone" ? norma.toFixed(2) : row.godziny
-        );
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row.login}</td>
-          <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
-          <td>${godzinyDoWyswietlenia}</td>
-          <td class="${kolor}">${status}</td>
-          <td>
-            ${godzinyRaw > norma && status !== "zaakceptowane" ? `
-              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-            ` : ""}
-          </td>
-          <td><button onclick="usun('${row.id}')">🗑️</button></td>
-        `;
-        tabela.appendChild(tr);
-      });
-
-      const suma = dane.reduce((sum, r) => {
-        const norma = getNorma(r.login);
-        let godz = parseFloat(r.godziny || 0);
-        if (godz > norma && r.status === "odrzucone") godz = norma;
-        return sum + godz;
-      }, 0);
-
-      const godziny = Math.floor(suma);
-      const minuty = Math.round((suma - godziny) * 60);
-      const sformatowanaSuma = `${godziny}h ${minuty}min`;
-
-      stopka.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${sformatowanaSuma}</strong></td><td colspan="3"></td></tr>`;
-    }
-
-    async function zapisz(id, pole, wartosc) {
-      if (!/^\d{2}:\d{2}$/.test(wartosc)) {
-        alert("Nieprawidłowy format godziny (HH:MM)");
-        return location.reload();
-      }
-      const ref = db.collection("godziny").doc(id);
-      const snap = await ref.get();
-      const dane = snap.data();
-      dane[pole] = wartosc;
-      if (dane.start && dane.end) dane.godziny = obliczGodziny(dane.start, dane.end);
-      await ref.set(dane);
-      location.reload();
-    }
-
-    async function zatwierdz(id) {
-      await db.collection("godziny").doc(id).update({ status: "zaakceptowane" });
-      location.reload();
-    }
-
-    async function odrzuc(id) {
-      const doc = await db.collection("godziny").doc(id).get();
-      const dane = doc.data();
-      const norma = getNorma(dane.login);
-      dane.status = "odrzucone";
-      if (parseFloat(dane.godziny) > norma) dane.godziny = norma.toFixed(2);
-      await db.collection("godziny").doc(id).set(dane);
-      location.reload();
-    }
-
-    async function usun(id) {
-      if (confirm("Czy na pewno usunąć?")) {
-        await db.collection("godziny").doc(id).delete();
-        location.reload();
-      }
-    }
-
-    function filtruj() {
-      const login = document.getElementById("filterLogin").value.trim().toLowerCase();
-      const data = document.getElementById("filterDate").value;
-      const wynik = daneWidoczne.filter(r =>
-        (login === "" || r.login.toLowerCase().includes(login)) &&
-        (data === "" || r.data === data)
-      );
-      renderujTabele(wynik);
-    }
-
-    exportBtn.addEventListener("click", () => {
-      const wb = XLSX.utils.book_new();
-      const daneDoXLSX = daneWidoczne.map(r => {
-        const norma = getNorma(r.login);
-        return {
-          Login: r.login,
-          Data: r.data,
-          Start: r.start,
-          Koniec: r.end,
-          Godziny: r.status === "odrzucone" && parseFloat(r.godziny) > norma ? norma.toFixed(2) : r.godziny,
-          Status: r.status || "zaakceptowane"
-        };
-      });
-      const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
-      XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-      XLSX.writeFile(wb, "godziny_kierownik.xlsx");
-    });
-
-    function wyloguj() {
-      localStorage.removeItem("rola");
-      location.href = "index.html";
-    }
-  </script>
+function wyloguj() {
+  firebase.auth().signOut().then(() => location.href = "index.html");
+}
+</script>
 </body>
 </html>
