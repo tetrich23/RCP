@@ -56,7 +56,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
   authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-  projectId: "rejestracja-czasu-pracy-e345e",
+  projectId: "rejestracja-czasu-pracy-e345e"
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -180,7 +180,6 @@ async function usunRekord(id) {
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
-  // Sortowanie alfabetyczne + po dacie rosnąco
   const posortowane = [...aktualneDane].sort((a, b) => {
     const nazwiskoPorownanie = a.nazwisko.localeCompare(b.nazwisko, 'pl');
     if (nazwiskoPorownanie !== 0) return nazwiskoPorownanie;
