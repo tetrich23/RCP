@@ -8,114 +8,115 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  body {
-    margin: 0;
-    font-family: 'Roboto', sans-serif;
-    background-color: #0f1115;
-    color: #e0e0e0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #0f1115;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
 
-  .container {
-    background-color: #1a1c22;
-    padding: 40px 30px;
-    border-radius: 12px;
-    max-width: 480px;
-    width: 100%;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-  }
+    .container {
+      background-color: #1a1c22;
+      padding: 40px 30px;
+      border-radius: 12px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    }
 
-  h2 {
-    text-align: center;
-    margin-bottom: 24px;
-    color: #00d1b2;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-  }
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #00d1b2;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
 
-  label {
-    display: block;
-    margin: 14px 0 6px;
-    font-weight: 500;
-    color: #b0b0b0;
-  }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: 500;
+      color: #b0b0b0;
+    }
 
-  input {
-    width: 100%;
-    padding: 12px 14px;
-    margin-bottom: 12px;
-    border: none;
-    border-radius: 6px;
-    background-color: #2a2d34;
-    color: #f1f1f1;
-    font-size: 15px;
-    transition: box-shadow 0.2s;
-  }
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #2a2d34;
+      color: #f1f1f1;
+      font-size: 15px;
+      transition: box-shadow 0.2s;
+    }
 
-  input:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px #00d1b2;
-  }
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #00d1b2;
+    }
 
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    background-color: #00bfa6;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s;
-  }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background-color: #00bfa6;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s;
+    }
 
-  button:hover {
-    background-color: #00a893;
-    transform: translateY(-1px);
-  }
+    button:hover {
+      background-color: #00a893;
+      transform: translateY(-1px);
+    }
 
-  #lista {
-    margin-top: 30px;
-    max-height: 220px;
-    overflow-y: auto;
-    border-top: 1px solid #2d2f36;
-    padding-top: 10px;
-  }
+    #lista {
+      margin-top: 30px;
+      max-height: 220px;
+      overflow-y: auto;
+      border-top: 1px solid #2d2f36;
+      padding-top: 10px;
+    }
 
-  .entry {
-    background-color: #23262c;
-    padding: 10px 15px;
-    margin-bottom: 10px;
-    border-radius: 6px;
-    color: #ccc;
-    font-size: 14px;
-    font-family: monospace;
-  }
+    .entry {
+      background-color: #23262c;
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      color: #ccc;
+      font-size: 14px;
+      font-family: monospace;
+    }
 
-  #loginDisplay {
-    text-align: center;
-    font-size: 14px;
-    color: #888;
-    margin-bottom: 20px;
-  }
-  input[type="date"],
-input[type="time"] {
-  font-family: 'Roboto', sans-serif;
-  font-size: 15px;
-  color: #f1f1f1;
-  background-color: #2a2d34;
-  border: none;
-  padding: 12px 14px;
-  border-radius: 6px;
-  appearance: none;
-}
-</style>
+    #loginDisplay {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    input[type="date"],
+    input[type="time"] {
+      font-family: 'Roboto', sans-serif;
+      font-size: 15px;
+      color: #f1f1f1;
+      background-color: #2a2d34;
+      border: none;
+      padding: 12px 14px;
+      border-radius: 6px;
+      appearance: none;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
@@ -164,6 +165,20 @@ input[type="time"] {
       }
     });
 
+    function obliczGodziny(start, end) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const minutes = (eh * 60 + em) - (sh * 60 + sm);
+      return (minutes / 60).toFixed(2);
+    }
+
+    function formatujGodziny(godzinyString) {
+      const liczba = parseFloat(godzinyString);
+      const godziny = Math.floor(liczba);
+      const minuty = Math.round((liczba - godziny) * 60);
+      return `${godziny}h ${minuty.toString().padStart(2, '0')}min`;
+    }
+
     async function zapisz() {
       const data = document.getElementById("data").value;
       const start = document.getElementById("start").value;
@@ -175,26 +190,13 @@ input[type="time"] {
       const godziny = obliczGodziny(start, end);
 
       try {
-        await db.collection("godziny").add({
-          login,
-          data,
-          start,
-          end,
-          godziny
-        });
+        await db.collection("godziny").add({ login, data, start, end, godziny });
         alert("Zapisano.");
         wczytaj();
       } catch (err) {
         console.error("Błąd zapisu:", err);
         alert("Błąd zapisu. Spróbuj ponownie.");
       }
-    }
-
-    function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const minutes = (eh * 60 + em) - (sh * 60 + sm);
-      return (minutes / 60).toFixed(2);
     }
 
     async function wczytaj() {
@@ -204,7 +206,7 @@ input[type="time"] {
       try {
         const snap = await db.collection("godziny")
           .where("login", "==", login)
-          .orderBy("data", "asc")  // Chronologicznie
+          .orderBy("data", "asc")
           .get();
 
         if (snap.empty) {
@@ -213,15 +215,15 @@ input[type="time"] {
         }
 
         zapisaneDane = [];
-
         lista.innerHTML = "";
+
         snap.forEach(doc => {
           const g = doc.data();
           zapisaneDane.push(g);
 
           const el = document.createElement("div");
           el.className = "entry";
-          el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny} h)`;
+          el.innerText = `${g.data}: ${g.start} – ${g.end} (${formatujGodziny(g.godziny)})`;
           lista.appendChild(el);
         });
       } catch (err) {
@@ -246,63 +248,39 @@ input[type="time"] {
       XLSX.writeFile(wb, "moje_godziny.xlsx");
     }
 
-   function drukuj() {
-  const printWindow = window.open('', '', 'height=600,width=800');
-  printWindow.document.write('<html><head><title>Drukuj godziny</title>');
-  printWindow.document.write(`
-    <style>
-      body {
-        font-family: 'Roboto', sans-serif;
-        padding: 20px;
-        background: #fff;
-        color: #000;
-      }
-      h2 {
-        text-align: center;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-      th, td {
-        border: 1px solid #ccc;
-        padding: 10px;
-        text-align: center;
-      }
-      th {
-        background-color: #f2f2f2;
-      }
-    </style>
-  `);
-  printWindow.document.write('</head><body>');
-  printWindow.document.write('<h2>Lista obecności za miesiąc ..............</h2>');
+    function drukuj() {
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Drukuj godziny</title>');
+      printWindow.document.write(`
+        <style>
+          body { font-family: 'Roboto', sans-serif; padding: 20px; background: #fff; color: #000; }
+          h2 { text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+          th { background-color: #f2f2f2; }
+        </style>
+      `);
+      printWindow.document.write('</head><body>');
+      printWindow.document.write('<h2>Lista obecności za miesiąc ..............</h2>');
+      printWindow.document.write('<table>');
+      printWindow.document.write('<tr><th>Data</th><th>Godzina przyjścia</th><th>Godzina wyjścia</th><th>Godziny</th></tr>');
 
-  printWindow.document.write('<table>');
-  printWindow.document.write('<tr><th>Data</th><th>Godzina przyjścia</th><th>Godzina wyjścia</th><th>Godziny</th></tr>');
+      zapisaneDane.forEach(row => {
+        const sformatowaneGodziny = formatujGodziny(row.godziny);
+        printWindow.document.write(`
+          <tr>
+            <td>${row.data}</td>
+            <td>${row.start}</td>
+            <td>${row.end}</td>
+            <td>${sformatowaneGodziny}</td>
+          </tr>
+        `);
+      });
 
-  zapisaneDane.forEach(row => {
-    const godzinyDziesietnie = parseFloat(row.godziny);
-    const godziny = Math.floor(godzinyDziesietnie);
-    const minuty = Math.round((godzinyDziesietnie - godziny) * 60);
-    const sformatowaneGodziny = `${godziny}h ${minuty}min`;
-
-    printWindow.document.write(`
-      <tr>
-        <td>${row.data}</td>
-        <td>${row.start}</td>
-        <td>${row.end}</td>
-        <td>${sformatowaneGodziny}</td>
-      </tr>
-    `);
-  });
-
-  printWindow.document.write('</table>');
-  printWindow.document.write('</body></html>');
-  printWindow.document.close();
-  printWindow.print();
-}
-
+      printWindow.document.write('</table></body></html>');
+      printWindow.document.close();
+      printWindow.print();
+    }
   </script>
 </body>
 </html>
