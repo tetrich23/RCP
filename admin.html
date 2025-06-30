@@ -180,29 +180,33 @@ async function usunRekord(id) {
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
-  const daneDoEksportu = aktualneDane.map(row => ({
-    Pracownik: row.nazwisko,
-    Data: row.data,
-    Start: row.start,
-    Koniec: row.end,
-    Godziny: formatGodzinyLudzkie(row.godziny)
-  }));
+  const daneDoEksportu = aktualneDane
+    .map(row => ({
+      Pracownik: row.nazwisko,
+      Data: row.data,
+      Start: row.start,
+      Koniec: row.end,
+      Godziny: formatGodzinyLudzkie(row.godziny)
+    }))
+    .sort((a, b) => a.Pracownik.localeCompare(b.Pracownik));
 
   const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
   XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
 
-  const raport = aktualneDane.map(row => {
-    const kod = row.login.split("@")[0];
-    return {
-      "Kod pracownika": kod,
-      "Data": row.data,
-      "Rodzaj czasu": "PRACA",
-      "Od godziny": row.start,
-      "Do godziny": row.end,
-      "Liczba godzin": formatGodzinyLudzkie(row.godziny),
-      "Opis": "Ewidencja RCP"
-    };
-  });
+  const raport = aktualneDane
+    .map(row => {
+      const kod = row.login.split("@")[0];
+      return {
+        "Kod pracownika": kod,
+        "Data": row.data,
+        "Rodzaj czasu": "PRACA",
+        "Od godziny": row.start,
+        "Do godziny": row.end,
+        "Liczba godzin": formatGodzinyLudzkie(row.godziny),
+        "Opis": "Ewidencja RCP"
+      };
+    })
+    .sort((a, b) => a["Kod pracownika"].localeCompare(b["Kod pracownika"]));
 
   const ws2 = XLSX.utils.json_to_sheet(raport);
   XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
