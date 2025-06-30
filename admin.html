@@ -1,17 +1,13 @@
+<!-- Początek pliku HTML -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
   <title>Panel Kadry</title>
-
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
-  <!-- XLSX do eksportu -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
   <style>
     body { font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f6f8fa; color: #333; }
     h1 { text-align: center; color: #1e3c72; }
@@ -45,7 +41,7 @@
 <table id="tabela-pracownikow">
   <thead>
     <tr>
-      <th>Login</th>
+      <th>Imię i nazwisko</th>
       <th>Data</th>
       <th>Start</th>
       <th>Koniec</th>
@@ -76,12 +72,12 @@ firebase.auth().onAuthStateChanged(user => {
   }
 });
 
-const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
-const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
-const filterUser  = document.getElementById("filterUser");
+const tabelaBody = document.querySelector("#tabela-pracownikow tbody");
+const tabelaFoot = document.querySelector("#tabela-pracownikow tfoot");
+const filterUser = document.getElementById("filterUser");
 const filterMonth = document.getElementById("filterMonth");
-const exportBtn   = document.getElementById("exportBtn");
-let aktualneDane  = [];
+const exportBtn = document.getElementById("exportBtn");
+let aktualneDane = [];
 
 function obliczGodziny(start, end) {
   if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
@@ -91,12 +87,26 @@ function obliczGodziny(start, end) {
 }
 
 async function wczytaj() {
-  const snapshot = await db.collection("godziny").get();
-  const wszystkieDane = snapshot.docs.map(doc => {
+  const [godzinySnap, usersSnap] = await Promise.all([
+    db.collection("godziny").get(),
+    db.collection("uzytkownicy").get()
+  ]);
+
+  const usersMap = {};
+  usersSnap.forEach(doc => {
     const d = doc.data();
+    if (d.imie && d.nazwisko) {
+      usersMap[doc.id] = `${d.imie} ${d.nazwisko}`;
+    }
+  });
+
+  const wszystkieDane = godzinySnap.docs.map(doc => {
+    const d = doc.data();
+    const login = d.login || "";
     return {
       id: doc.id,
-      login: d.login || "",
+      login,
+      imieNazwisko: usersMap[login] || login,
       data: d.data || "",
       start: d.start || "",
       end: d.end || "",
@@ -107,7 +117,7 @@ async function wczytaj() {
   const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
   if (filterUser.options.length <= 1) {
     filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-      unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+      unikalni.map(u => `<option value="${u}">${usersMap[u] || u}</option>`).join('');
   }
 
   const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
@@ -127,7 +137,7 @@ async function wczytaj() {
   aktualneDane.forEach(d => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${d.login}</td>
+      <td>${d.imieNazwisko}</td>
       <td>${d.data}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
@@ -168,7 +178,7 @@ exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
   const daneDoEksportu = aktualneDane.map(row => ({
-    Login: row.login,
+    Pracownik: row.imieNazwisko,
     Data: row.data,
     Start: row.start,
     Koniec: row.end,
