@@ -7,128 +7,93 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-  body {
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 40px 20px;
-    background: linear-gradient(to right, #f4f6f9, #ffffff);
-    color: #2e2e2e;
-  }
-
-  h1 {
-    text-align: center;
-    font-size: 30px;
-    margin-bottom: 35px;
-    color: #1e2a38;
-    letter-spacing: 0.5px;
-  }
-
-  input, select, button {
-    margin: 6px;
-    padding: 10px 14px;
-    font-size: 15px;
-    border-radius: 8px;
-    border: 1px solid #ccd6dd;
-    outline: none;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
-  }
-
-  input:focus, select:focus {
-    border-color: #1a73e8;
-    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
-  }
-
-  button {
-    background-color: #1a73e8;
-    color: white;
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.1s ease-in-out;
-  }
-
-  button:hover {
-    background-color: #155ab6;
-    transform: translateY(-1px);
-  }
-
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-top: 35px;
-    background-color: #ffffff;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
-  }
-
-  th {
-    background-color: #f0f4f8;
-    padding: 14px;
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 13px;
-    color: #556273;
-  }
-
-  td {
-    padding: 12px;
-    border-top: 1px solid #ebeff2;
-    text-align: center;
-    font-size: 14px;
-    color: #3c4758;
-  }
-
-  td[contenteditable] {
-    background-color: #f9fcff;
-    border: 1px dashed transparent;
-    transition: background-color 0.3s;
-  }
-
-  td[contenteditable]:focus {
-    background-color: #eaf4ff;
-    border-color: #a5cfff;
-    outline: none;
-  }
-
-  .status-green {
-    background-color: #daf5e5;
-    color: #2d8659;
-    font-weight: 600;
-    border-radius: 6px;
-    padding: 4px 8px;
-    display: inline-block;
-  }
-
-  .status-red {
-    background-color: #fce0e0;
-    color: #c0392b;
-    font-weight: 600;
-    border-radius: 6px;
-    padding: 4px 8px;
-    display: inline-block;
-  }
-
-  .status-yellow {
-    background-color: #fff7d6;
-    color: #b8860b;
-    font-weight: 600;
-    border-radius: 6px;
-    padding: 4px 8px;
-    display: inline-block;
-  }
-
-  .actions button {
-    margin: 2px;
-    padding: 7px 12px;
-    font-size: 13px;
-    border-radius: 6px;
-    font-weight: 500;
-  }
-</style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: linear-gradient(to right, #e9eff5, #fdfdfd);
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background-color: white;
+    }
+    th {
+      background-color: #f5f7fa;
+      padding: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    td {
+      padding: 10px;
+      border-top: 1px solid #e0e6ed;
+      text-align: center;
+      font-size: 14px;
+    }
+    td[contenteditable] {
+      background-color: #f9fcff;
+    }
+    .status-green {
+      background-color: #e0f4e6;
+      color: #2e7d32;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-red {
+      background-color: #fbeaea;
+      color: #c0392b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-yellow {
+      background-color: #fff7e0;
+      color: #b8860b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .actions button {
+      margin: 2px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
   <h1>Panel Dyrektora</h1>
@@ -180,8 +145,13 @@
     const exportBtn = document.getElementById("exportBtn");
     let daneWidoczne = [];
 
-    // Lista loginów pracowników z normą 10h
-    const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
+    // Pracownicy z normą 10h
+    const login10h = [
+      "a.krzon@naszprad.com",
+      "e.labaz@naszprad.com",
+      "n.gmitruk@naszprad.com",
+      "p.haczkiewicz@naszprad.com"
+    ];
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
@@ -197,25 +167,21 @@
       const data = doc.data();
       if (!data || !data.rola) return location.href = "index.html";
 
-      let rola = data.rola;
-      if (typeof rola === "string") {
-        rola = [rola];
-      }
+      let rola = Array.isArray(data.rola) ? data.rola : [data.rola];
       rola = rola.map(r => r.trim().toLowerCase());
       if (!rola.includes("dyrektor")) return location.href = "index.html";
 
       const podwladni = data.podwladni || [];
-
       const select = document.getElementById("filterLogin");
       podwladni.forEach(login => {
-        const option = document.createElement("option");
-        option.value = login;
-        option.textContent = login;
-        select.appendChild(option);
+        const opt = document.createElement("option");
+        opt.value = login;
+        opt.textContent = login;
+        select.appendChild(opt);
       });
 
-      const snapshot = await db.collection("godziny").get();
-      daneWidoczne = snapshot.docs
+      const snap = await db.collection("godziny").get();
+      daneWidoczne = snap.docs
         .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(r => podwladni.includes(r.login));
 
@@ -233,31 +199,35 @@
 
       dane.forEach(row => {
         const norma = getNorma(row.login);
-        let status;
-if (row.status) {
-  status = row.status;
-} else {
-  const godz = parseFloat(row.godziny);
-  status = godz > norma ? "oczekuje" : "zaakceptowane";
-}
+        const godz = parseFloat(row.godziny);
+        const status = row.status ||
+          (godz > norma ? "oczekuje" : "zaakceptowane");
+        const kolor = status === "zaakceptowane"
+          ? "status-green"
+          : status === "odrzucone"
+            ? "status-red"
+            : "status-yellow";
 
-        const kolor =
-          status === "zaakceptowane" ? "status-green" :
-          status === "odrzucone" ? "status-red" : "status-yellow";
+        const pokazGodziny = (godz > norma && status === "odrzucone")
+          ? norma.toFixed(2)
+          : row.godziny;
 
         const tr = document.createElement("tr");
-        const godzinyDoWyswietlenia =
-          parseFloat(row.godziny) > norma && status === "odrzucone" ? norma.toFixed(2) : row.godziny;
-
         tr.innerHTML = `
           <td>${row.login}</td>
           <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
-          <td>${godzinyDoWyswietlenia}</td>
+          <td contenteditable
+              onblur="zapisz('${row.id}', 'start', this.innerText)">
+            ${row.start}
+          </td>
+          <td contenteditable
+              onblur="zapisz('${row.id}', 'end', this.innerText)">
+            ${row.end}
+          </td>
+          <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
           <td>
-            ${parseFloat(row.godziny) > norma && status !== "zaakceptowane" ? `
+            ${godz > norma && status !== "zaakceptowane" ? `
               <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
               <button onclick="odrzuc('${row.id}')">Odrzuć</button>
             ` : ""}
@@ -268,13 +238,20 @@ if (row.status) {
       });
 
       const suma = dane.reduce((sum, r) => {
-        const norma = getNorma(r.login);
-        let godz = parseFloat(r.godziny || 0);
-        if (godz > norma && r.status === "odrzucone") godz = norma;
+        let godz = parseFloat(r.godziny) || 0;
+        if (r.status === "odrzucone" && godz > getNorma(r.login)) {
+          godz = getNorma(r.login);
+        }
         return sum + godz;
       }, 0).toFixed(2);
 
-      stopka.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${suma}</strong></td><td colspan="3"></td></tr>`;
+      stopka.innerHTML = `
+        <tr>
+          <td colspan="4"><strong>Razem</strong></td>
+          <td><strong>${suma}</strong></td>
+          <td colspan="3"></td>
+        </tr>
+      `;
     }
 
     async function zapisz(id, pole, wartosc) {
@@ -283,26 +260,31 @@ if (row.status) {
         return location.reload();
       }
       const ref = db.collection("godziny").doc(id);
-      const snap = await ref.get();
-      const dane = snap.data();
-      dane[pole] = wartosc;
-      if (dane.start && dane.end) dane.godziny = obliczGodziny(dane.start, dane.end);
-      await ref.set(dane);
+      const doc = await ref.get();
+      const data = doc.data();
+      data[pole] = wartosc;
+      if (data.start && data.end) {
+        data.godziny = obliczGodziny(data.start, data.end);
+      }
+      await ref.set(data);
       location.reload();
     }
 
     async function zatwierdz(id) {
-      await db.collection("godziny").doc(id).update({ status: "zaakceptowane" });
+      await db.collection("godziny").doc(id)
+        .update({ status: "zaakceptowane" });
       location.reload();
     }
 
     async function odrzuc(id) {
       const doc = await db.collection("godziny").doc(id).get();
-      const dane = doc.data();
-      const norma = getNorma(dane.login);
-      dane.status = "odrzucone";
-      if (parseFloat(dane.godziny) > norma) dane.godziny = norma.toFixed(2);
-      await db.collection("godziny").doc(id).set(dane);
+      const data = doc.data();
+      const norma = getNorma(data.login);
+      data.status = "odrzucone";
+      if (parseFloat(data.godziny) > norma) {
+        data.godziny = norma.toFixed(2);
+      }
+      await db.collection("godziny").doc(id).set(data);
       location.reload();
     }
 
@@ -314,11 +296,11 @@ if (row.status) {
     }
 
     function filtruj() {
-      const login = document.getElementById("filterLogin").value.trim().toLowerCase();
-      const data = document.getElementById("filterDate").value;
+      const log = document.getElementById("filterLogin").value.trim().toLowerCase();
+      const dat = document.getElementById("filterDate").value;
       const wynik = daneWidoczne.filter(r =>
-        (login === "" || r.login.toLowerCase().includes(login)) &&
-        (data === "" || r.data === data)
+        (log === "" || r.login.toLowerCase().includes(log)) &&
+        (dat === "" || r.data === dat)
       );
       renderujTabele(wynik);
     }
@@ -327,12 +309,16 @@ if (row.status) {
       const wb = XLSX.utils.book_new();
       const daneDoXLSX = daneWidoczne.map(r => {
         const norma = getNorma(r.login);
+        let godz = parseFloat(r.godziny) || 0;
+        if (r.status === "odrzucone" && godz > norma) {
+          godz = norma;
+        }
         return {
           Login: r.login,
           Data: r.data,
           Start: r.start,
           Koniec: r.end,
-          Godziny: r.status === "odrzucone" && parseFloat(r.godziny) > norma ? norma.toFixed(2) : r.godziny,
+          Godziny: godz.toFixed(2),
           Status: r.status || "zaakceptowane"
         };
       });
