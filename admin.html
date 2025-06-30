@@ -175,17 +175,18 @@
 
       const snapshot = await db.collection("godziny").get();
       const wszystkieDane = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          login: data.login || "",
-          data: data.data || "",
-          start: data.start || "",
-          end: data.end || "",
-          godziny: data.godziny || obliczGodziny(data.start, data.end),
-          statusNadgodzin: data.statusNadgodzin || "oczekujące"
-        };
-      });
+  const data = doc.data();
+  return {
+    id: doc.id,
+    login: data.login || "",
+    data: data.data || "",
+    start: data.start || "",
+    end: data.end || "",
+    godziny: data.godziny || obliczGodziny(data.start, data.end),
+    statusNadgodzin: typeof data.statusNadgodzin === "string" ? data.statusNadgodzin : "oczekujące"
+  };
+});
+
 
       const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
       if (filterUser.options.length <= 1) {
