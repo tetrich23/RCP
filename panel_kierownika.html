@@ -304,14 +304,11 @@
       XLSX.writeFile(wb, "godziny_kierownik.xlsx");
     });
 
-    // 🚪 Wylogowywanie użytkownika
-    function wyloguj() {
-      firebase.auth().signOut().then(() => {
-        location.href = "index.html";
-      }).catch(error => {
-        alert("Błąd podczas wylogowywania: " + error.message);
-      });
-    }
+ // 🔄 Powrót do wyboru roli
+function wyloguj() {
+  localStorage.removeItem("rola"); // Usuń tylko wybraną rolę
+  location.href = "index.html";    // Przejdź do strony wyboru roli
+}
   </script>
 </body>
 </html>
