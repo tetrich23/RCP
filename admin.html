@@ -1,4 +1,3 @@
-<!-- Początek pliku HTML -->
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -41,7 +40,7 @@
 <table id="tabela-pracownikow">
   <thead>
     <tr>
-      <th>Imię i nazwisko</th>
+      <th>Pracownik</th>
       <th>Data</th>
       <th>Start</th>
       <th>Koniec</th>
@@ -63,21 +62,38 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+let mapaUzytkownikow = {};
+
+function formatGodzinyLudzkie(godzinyString) {
+  const liczba = parseFloat(godzinyString);
+  const godziny = Math.floor(liczba);
+  const minuty = Math.round((liczba - godziny) * 60);
+  return `${godziny}h ${minuty.toString().padStart(2, '0')}min`;
+}
+
 firebase.auth().onAuthStateChanged(user => {
   if (!user) {
     alert("Musisz być zalogowany.");
     window.location.href = "login.html";
   } else {
-    wczytaj();
+    zaladujUzytkownikow().then(wczytaj);
   }
 });
 
-const tabelaBody = document.querySelector("#tabela-pracownikow tbody");
-const tabelaFoot = document.querySelector("#tabela-pracownikow tfoot");
-const filterUser = document.getElementById("filterUser");
+const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
+const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
+const filterUser  = document.getElementById("filterUser");
 const filterMonth = document.getElementById("filterMonth");
-const exportBtn = document.getElementById("exportBtn");
-let aktualneDane = [];
+const exportBtn   = document.getElementById("exportBtn");
+let aktualneDane  = [];
+
+async function zaladujUzytkownikow() {
+  const snap = await db.collection("uzytkownicy").get();
+  snap.docs.forEach(doc => {
+    const data = doc.data();
+    mapaUzytkownikow[doc.id] = `${data.imie || ""} ${data.nazwisko || ""}`.trim();
+  });
+}
 
 function obliczGodziny(start, end) {
   if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
@@ -87,26 +103,13 @@ function obliczGodziny(start, end) {
 }
 
 async function wczytaj() {
-  const [godzinySnap, usersSnap] = await Promise.all([
-    db.collection("godziny").get(),
-    db.collection("uzytkownicy").get()
-  ]);
-
-  const usersMap = {};
-  usersSnap.forEach(doc => {
+  const snapshot = await db.collection("godziny").get();
+  const wszystkieDane = snapshot.docs.map(doc => {
     const d = doc.data();
-    if (d.imie && d.nazwisko) {
-      usersMap[doc.id] = `${d.imie} ${d.nazwisko}`;
-    }
-  });
-
-  const wszystkieDane = godzinySnap.docs.map(doc => {
-    const d = doc.data();
-    const login = d.login || "";
     return {
       id: doc.id,
-      login,
-      imieNazwisko: usersMap[login] || login,
+      login: d.login || "",
+      nazwisko: mapaUzytkownikow[d.login] || d.login,
       data: d.data || "",
       start: d.start || "",
       end: d.end || "",
@@ -117,7 +120,7 @@ async function wczytaj() {
   const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
   if (filterUser.options.length <= 1) {
     filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-      unikalni.map(u => `<option value="${u}">${usersMap[u] || u}</option>`).join('');
+      unikalni.map(u => `<option value="${u}">${mapaUzytkownikow[u] || u}</option>`).join('');
   }
 
   const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
@@ -137,18 +140,18 @@ async function wczytaj() {
   aktualneDane.forEach(d => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${d.imieNazwisko}</td>
+      <td>${d.nazwisko}</td>
       <td>${d.data}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
-      <td class="godziny">${d.godziny}</td>
+      <td>${formatGodzinyLudzkie(d.godziny)}</td>
       <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
     `;
     tabelaBody.appendChild(tr);
   });
 
   const suma = aktualneDane.reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0).toFixed(2);
-  tabelaFoot.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${suma}</strong></td><td></td></tr>`;
+  tabelaFoot.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${formatGodzinyLudzkie(suma)}</strong></td><td></td></tr>`;
 }
 
 async function zapiszZmiane(id, pole, wartosc) {
@@ -178,11 +181,11 @@ exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
 
   const daneDoEksportu = aktualneDane.map(row => ({
-    Pracownik: row.imieNazwisko,
+    Pracownik: row.nazwisko,
     Data: row.data,
     Start: row.start,
     Koniec: row.end,
-    Godziny: row.godziny
+    Godziny: formatGodzinyLudzkie(row.godziny)
   }));
 
   const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
@@ -196,7 +199,7 @@ exportBtn.addEventListener("click", () => {
       "Rodzaj czasu": "PRACA",
       "Od godziny": row.start,
       "Do godziny": row.end,
-      "Liczba godzin": row.godziny,
+      "Liczba godzin": formatGodzinyLudzkie(row.godziny),
       "Opis": "Ewidencja RCP"
     };
   });
