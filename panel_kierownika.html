@@ -18,8 +18,12 @@
     h1 {
       text-align: center;
       font-size: 28px;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       color: #2c3e50;
+    }
+    .logout-container {
+      text-align: center;
+      margin-bottom: 30px;
     }
     input, select, button {
       margin: 5px;
@@ -97,6 +101,9 @@
 </head>
 <body>
   <h1>Panel Kierownika</h1>
+  <div class="logout-container">
+    <button onclick="wyloguj()">Wyloguj</button>
+  </div>
 
   <div>
     <label>Login:</label>
@@ -145,7 +152,6 @@
     const exportBtn = document.getElementById("exportBtn");
     let daneWidoczne = [];
 
-    // Lista loginów pracowników z normą 10h
     const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
 
     function obliczGodziny(start, end) {
@@ -163,9 +169,7 @@
       if (!data || !data.rola) return location.href = "index.html";
 
       let rola = data.rola;
-      if (typeof rola === "string") {
-        rola = [rola];
-      }
+      if (typeof rola === "string") rola = [rola];
       rola = rola.map(r => r.trim().toLowerCase());
       if (!rola.includes("kierownik")) return location.href = "index.html";
 
@@ -198,13 +202,7 @@
 
       dane.forEach(row => {
         const norma = getNorma(row.login);
-        let status;
-if (row.status) {
-  status = row.status;
-} else {
-  const godz = parseFloat(row.godziny);
-  status = godz > norma ? "oczekuje" : "zaakceptowane";
-}
+        let status = row.status ? row.status : (parseFloat(row.godziny) > norma ? "oczekuje" : "zaakceptowane");
 
         const kolor =
           status === "zaakceptowane" ? "status-green" :
@@ -305,6 +303,15 @@ if (row.status) {
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
       XLSX.writeFile(wb, "godziny_kierownik.xlsx");
     });
+
+    // 🚪 Wylogowywanie użytkownika
+    function wyloguj() {
+      firebase.auth().signOut().then(() => {
+        location.href = "index.html";
+      }).catch(error => {
+        alert("Błąd podczas wylogowywania: " + error.message);
+      });
+    }
   </script>
 </body>
 </html>
