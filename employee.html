@@ -24,7 +24,7 @@
       background-color: #1a1c22;
       padding: 40px 30px;
       border-radius: 12px;
-      max-width: 520px;
+      max-width: 480px;
       width: 100%;
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
     }
@@ -34,6 +34,7 @@
       margin-bottom: 24px;
       color: #00d1b2;
       font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
     label {
@@ -52,12 +53,12 @@
       background-color: #2a2d34;
       color: #f1f1f1;
       font-size: 15px;
+      transition: box-shadow 0.2s;
     }
 
-    input[type="checkbox"] {
-      width: auto;
-      margin-left: 10px;
-      transform: scale(1.2);
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #00d1b2;
     }
 
     button {
@@ -71,6 +72,12 @@
       color: #fff;
       font-weight: 600;
       cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: #00a893;
+      transform: translateY(-1px);
     }
 
     #lista {
@@ -90,6 +97,25 @@
       font-size: 14px;
       font-family: monospace;
     }
+
+    #loginDisplay {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    input[type="date"],
+    input[type="time"] {
+      font-family: 'Roboto', sans-serif;
+      font-size: 15px;
+      color: #f1f1f1;
+      background-color: #2a2d34;
+      border: none;
+      padding: 12px 14px;
+      border-radius: 6px;
+      appearance: none;
+    }
   </style>
 </head>
 <body>
@@ -98,26 +124,13 @@
     <p id="loginDisplay">Sprawdzanie sesji...</p>
 
     <label for="data">Data:</label>
-    <input type="date" id="data" />
+    <input type="date" id="data">
 
-    <!-- Praca o etacie -->
-    <label for="start" id="startLabel">Godzina przyjścia:</label>
-    <input type="time" id="start" />
-    <label for="end" id="endLabel">Godzina wyjścia:</label>
-    <input type="time" id="end" />
+    <label for="start">Godzina przyjścia:</label>
+    <input type="time" id="start">
 
-    <!-- Umowa zlecenie -->
-    <label for="startZlec" id="startZlecLabel" style="display:none;">Rozpoczęcie:</label>
-    <input type="time" id="startZlec" style="display:none;" />
-    <label for="endZlec" id="endZlecLabel" style="display:none;">Zakończenie:</label>
-    <input type="time" id="endZlec" style="display:none;" />
-    <label for="breakZlec" id="breakZlecLabel" style="display:none;">Przerwa (minuty):</label>
-    <input type="number" id="breakZlec" style="display:none;" min="0" max="480" />
-    <label for="hoursZlec" id="hoursZlecLabel" style="display:none;">Godzin przepracowanych:</label>
-    <input type="number" step="0.01" id="hoursZlec" style="display:none;" min="0" max="24" />
-
-    <!-- Praca zdalna -->
-    <label><input type="checkbox" id="remote" /> Praca zdalna</label>
+    <label for="end">Godzina wyjścia:</label>
+    <input type="time" id="end">
 
     <button onclick="zapisz()">Zapisz</button>
     <button onclick="eksportuj()">Eksportuj do Excela</button>
@@ -133,49 +146,24 @@
       projectId: "rejestracja-czasu-pracy-e345e",
       storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
       messagingSenderId: "198373663295",
-      appId: "1:198373663295:web:a2a07384d8814101254e8a"
+      appId: "1:198373663295:web:a2a07384d8814101254e8a",
+      measurementId: "G-6CG743TGTS"
     };
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    let login = "", typUmowy = "umowa o pracę", zapisaneDane = [];
+    let login = "";
+    let zapisaneDane = [];
 
-    firebase.auth().onAuthStateChanged(async user => {
+    firebase.auth().onAuthStateChanged(user => {
       if (user) {
         login = user.email;
         document.getElementById("loginDisplay").innerText = "Zalogowany jako: " + login;
-
-        try {
-          const doc = await db.collection("uzytkownicy").doc(login).get();
-          if (doc.exists) typUmowy = doc.data().typumowy || "umowa o pracę";
-        } catch (e) { console.warn("Nie pobrano typu umowy:", e); }
-
-        pokazFormularzZaleznieOdUmowy();
         wczytaj();
       } else {
         window.location.href = "login.html";
       }
     });
-
-    function pokazFormularzZaleznieOdUmowy() {
-      const showZlec = typUmowy === "umowa zlecenie";
-
-      const toggle = (id, show) => document.getElementById(id).style.display = show ? "" : "none";
-
-      toggle("startZlecLabel", showZlec);
-      toggle("startZlec", showZlec);
-      toggle("endZlecLabel", showZlec);
-      toggle("endZlec", showZlec);
-      toggle("breakZlecLabel", showZlec);
-      toggle("breakZlec", showZlec);
-      toggle("hoursZlecLabel", showZlec);
-      toggle("hoursZlec", showZlec);
-
-      toggle("start", !showZlec);
-      toggle("startLabel", !showZlec);
-      toggle("end", !showZlec);
-      toggle("endLabel", !showZlec);
-    }
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
@@ -184,99 +172,115 @@
       return (minutes / 60).toFixed(2);
     }
 
-    function formatujGodziny(str) {
-      const val = parseFloat(str);
-      const h = Math.floor(val);
-      const m = Math.round((val - h) * 60);
-      return `${h}h ${m.toString().padStart(2, "0")}min`;
+    function formatujGodziny(godzinyString) {
+      const liczba = parseFloat(godzinyString);
+      const godziny = Math.floor(liczba);
+      const minuty = Math.round((liczba - godziny) * 60);
+      return `${godziny}h ${minuty.toString().padStart(2, '0')}min`;
     }
 
     async function zapisz() {
       const data = document.getElementById("data").value;
-      const zdalna = document.getElementById("remote").checked;
-      if (!data) return alert("Uzupełnij datę!");
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
 
-      let entry = { login, data, zdalna, typumowy: typUmowy };
+      if (!data || !start || !end) return alert("Uzupełnij wszystkie pola!");
+      if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
 
-      if (typUmowy === "umowa zlecenie") {
-        const start = document.getElementById("startZlec").value;
-        const end = document.getElementById("endZlec").value;
-        const przerwa = parseInt(document.getElementById("breakZlec").value || "0");
-        const godziny = parseFloat(document.getElementById("hoursZlec").value);
-        if (!start || !end || isNaN(godziny)) return alert("Uzupełnij wszystkie pola!");
-
-        entry = { ...entry, start, end, przerwa, godziny };
-
-      } else {
-        const start = document.getElementById("start").value;
-        const end = document.getElementById("end").value;
-        if (!start || !end) return alert("Uzupełnij wszystkie pola!");
-        if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza.");
-
-        const godziny = obliczGodziny(start, end);
-        entry = { ...entry, start, end, godziny };
-      }
+      const godziny = obliczGodziny(start, end);
 
       try {
-        await db.collection("godziny").add(entry);
+        await db.collection("godziny").add({ login, data, start, end, godziny });
         alert("Zapisano.");
         wczytaj();
       } catch (err) {
         console.error("Błąd zapisu:", err);
-        alert("Błąd zapisu.");
+        alert("Błąd zapisu. Spróbuj ponownie.");
       }
     }
 
     async function wczytaj() {
       const lista = document.getElementById("lista");
       lista.innerHTML = "<p>Ładowanie danych...</p>";
+
       try {
         const snap = await db.collection("godziny")
           .where("login", "==", login)
-          .orderBy("data", "asc").get();
+          .orderBy("data", "asc")
+          .get();
 
-        if (snap.empty) return lista.innerHTML = "<p>Brak wpisów.</p>";
+        if (snap.empty) {
+          lista.innerHTML = "<p>Brak wpisów.</p>";
+          return;
+        }
+
         zapisaneDane = [];
         lista.innerHTML = "";
 
         snap.forEach(doc => {
           const g = doc.data();
           zapisaneDane.push(g);
+
           const el = document.createElement("div");
           el.className = "entry";
-          el.innerText = `${g.data}: ${g.start} – ${g.end} (${formatujGodziny(g.godziny)}) ${g.zdalna ? "🌐" : "🏢"}`;
+          el.innerText = `${g.data}: ${g.start} – ${g.end} (${formatujGodziny(g.godziny)})`;
           lista.appendChild(el);
         });
-      } catch (e) {
+      } catch (err) {
+        console.error("Błąd wczytywania:", err);
         lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
       }
     }
 
     function eksportuj() {
-      if (!zapisaneDane.length) return alert("Brak danych.");
+      if (!zapisaneDane.length) return alert("Brak danych do eksportu.");
+
       const dane = zapisaneDane.map(row => ({
         Data: row.data,
         Start: row.start,
         Koniec: row.end,
-        Godziny: formatujGodziny(row.godziny),
-        Zdalna: row.zdalna ? "Tak" : "Nie"
+        Godziny: row.godziny
       }));
+
       const ws = XLSX.utils.json_to_sheet(dane);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-      XLSX.writeFile(wb, "godziny.xlsx");
+      XLSX.writeFile(wb, "moje_godziny.xlsx");
     }
 
     function drukuj() {
-      const w = window.open('', '', 'height=600,width=800');
-      w.document.write('<html><head><title>Druk</title><style>body{font-family:Arial;}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:center}</style></head><body>');
-      w.document.write('<h2>Lista obecności</h2><table><tr><th>Data</th><th>Początek</th><th>Koniec</th><th>Godziny</th><th>Tryb</th><th>Podpis</th></tr>');
-      zapisaneDane.forEach(r => {
-        w.document.write(`<tr><td>${r.data}</td><td>${r.start}</td><td>${r.end}</td><td>${formatujGodziny(r.godziny)}</td><td>${r.zdalna ? "Zdalna" : "Stacjonarna"}</td><td></td></tr>`);
+      const printWindow = window.open('', '', 'height=600,width=800');
+      printWindow.document.write('<html><head><title>Drukuj godziny</title>');
+      printWindow.document.write(`
+        <style>
+          body { font-family: 'Roboto', sans-serif; padding: 20px; background: #fff; color: #000; }
+          h2 { text-align: center; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
+          th { background-color: #f2f2f2; }
+        </style>
+      `);
+      printWindow.document.write('</head><body>');
+      printWindow.document.write('<h2>Lista obecności za miesiąc ..............</h2>');
+      printWindow.document.write('<table>');
+      printWindow.document.write('<tr><th>Data</th><th>Godzina przyjścia</th><th>Godzina wyjścia</th><th>Godziny</th><th>Podpis</th></tr>');
+
+      zapisaneDane.forEach(row => {
+        const sformatowaneGodziny = formatujGodziny(row.godziny);
+        printWindow.document.write(`
+          <tr>
+            <td>${row.data}</td>
+            <td>${row.start}</td>
+            <td>${row.end}</td>
+            <td>${sformatowaneGodziny}</td>
+            <td style="height: 40px;"></td>
+          </tr>
+        `);
       });
-      w.document.write('</table></body></html>');
-      w.document.close();
-      w.print();
+
+      printWindow.document.write('</table></body></html>');
+      printWindow.document.close();
+      printWindow.print();
     }
   </script>
 </body>
