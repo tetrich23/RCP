@@ -154,45 +154,49 @@
     }
 
     firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return location.href = "index.html";
+  if (!user) return location.href = "index.html";
 
-      const doc = await db.collection("users").doc(user.email).get();
-      const data = doc.data();
-      if (!data || !data.rola) return location.href = "index.html";
+  const doc = await db.collection("users").doc(user.email).get();
+  const data = doc.data();
+  if (!data || !data.rola) return location.href = "index.html";
 
-      let podwladni = [];
+  const rola = String(data.rola).toLowerCase();
+  let podwladni = [];
 
-      const snapUzytkownicy = await db.collection("uzytkownicy").get();
-      snapUzytkownicy.forEach(d => {
-        const u = d.data();
-        if (u.imie && u.nazwisko) {
-          mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
-        }
-      });
-
-      if (String(data.rola).toLowerCase() === "admin") {
-        podwladni = Object.keys(mapaUzytkownikow);
-      } else if (Array.isArray(data.podwladni)) {
-        podwladni = data.podwladni;
-      } else {
-        return location.href = "index.html";
-      }
-
-      const select = document.getElementById("filterLogin");
-      podwladni.forEach(email => {
-        const option = document.createElement("option");
-        option.value = email;
-        option.textContent = mapaUzytkownikow[email] || email;
-        select.appendChild(option);
-      });
-
-      const snap = await db.collection("godziny").get();
-      daneWidoczne = snap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(r => podwladni.includes(r.login));
-
-      renderujTabele(daneWidoczne);
+  if (rola === "admin") {
+    const snapUzytkownicy = await db.collection("uzytkownicy").get();
+    snapUzytkownicy.forEach(doc => {
+      podwladni.push(doc.id);
     });
+  } else if (Array.isArray(data.podwladni)) {
+    podwladni = data.podwladni;
+  } else {
+    return location.href = "index.html";
+  }
+
+  const snapUzytkownicy = await db.collection("uzytkownicy").get();
+  snapUzytkownicy.forEach(d => {
+    const u = d.data();
+    if (u.imie && u.nazwisko) {
+      mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
+    }
+  });
+
+  const select = document.getElementById("filterLogin");
+  podwladni.forEach(email => {
+    const option = document.createElement("option");
+    option.value = email;
+    option.textContent = mapaUzytkownikow[email] || email;
+    select.appendChild(option);
+  });
+
+  const snap = await db.collection("godziny").get();
+  daneWidoczne = snap.docs
+    .map(doc => ({ id: doc.id, ...doc.data() }))
+    .filter(r => podwladni.includes(r.login));
+
+  renderujTabele(daneWidoczne);
+});
 
     function renderujTabele(dane) {
       tabela.innerHTML = "";
