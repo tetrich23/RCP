@@ -293,12 +293,6 @@
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
-          <td>
-            ${godz > norma && status !== "zaakceptowane" ? `
-              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-            ` : ""}
-          </td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
         `;
         tabela.appendChild(tr);
