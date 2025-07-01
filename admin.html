@@ -275,19 +275,42 @@
     }
 
     function renderujUrlopy(dane) {
-      const tbody = document.getElementById("tabelaUrlopy");
-      tbody.innerHTML = "";
-      dane.forEach(row => {
-        const tr = document.createElement("tr");
-        const pracownik = mapaUzytkownikow[row.login] || row.login;
-        tr.innerHTML = `
-          <td>${pracownik}</td>
-          <td>${row.data}</td>
-          <td>${row.rodzaj || "Urlop"}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+  const tbody = document.getElementById("tabelaUrlopy");
+  tbody.innerHTML = "";
+
+  const dzisiaj = new Date();
+  dzisiaj.setHours(0, 0, 0, 0); // dla porównań tylko daty
+
+  const filtrowane = dane.filter(row => {
+    if (row.do) {
+      const dataDo = new Date(row.do);
+      dataDo.setHours(0, 0, 0, 0);
+      return dataDo >= dzisiaj;
     }
+    if (row.data) {
+      const dataJednodniowa = new Date(row.data);
+      dataJednodniowa.setHours(0, 0, 0, 0);
+      return dataJednodniowa >= dzisiaj;
+    }
+    return false;
+  });
+
+  filtrowane.sort((a, b) => new Date(b.od || b.data) - new Date(a.od || a.data));
+
+  filtrowane.forEach(row => {
+    const pracownik = mapaUzytkownikow[row.login] || row.login;
+    const zakres = row.od && row.do ? `${row.od} – ${row.do}` : (row.data || "brak");
+    const dni = obliczIloscDni(row.od, row.do);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${pracownik}</td>
+      <td>${zakres}</td>
+      <td>${dni}</td>
+      <td>${row.rodzaj || "Urlop"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
 
     function pokazPanel(nazwa) {
       document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
