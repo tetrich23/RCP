@@ -21,6 +21,7 @@
       border-collapse: collapse;
       width: 100%;
       margin-bottom: 40px;
+      background-color: white;
     }
 
     th, td {
@@ -30,8 +31,12 @@
     }
 
     th {
-      background-color: #007bff;
-      color: white;
+      background-color: #f2f5fc;
+      color: #333;
+    }
+
+    tfoot td {
+      background-color: #f2f5fc;
     }
 
     .danger {
@@ -67,14 +72,20 @@
   <table>
     <thead>
       <tr>
-        <th>Email</th>
-        <th>Rola</th>
-        <th>Data</th>
-        <th>Wejście</th>
-        <th>Wyjście</th>
+        <th>PRACOWNIK</th>
+        <th>DATA</th>
+        <th>START</th>
+        <th>KONIEC</th>
+        <th>GODZINY</th>
       </tr>
     </thead>
     <tbody id="tabelaGodzin"></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4" style="text-align: right; font-weight: bold;">Razem</td>
+        <td id="sumaGodzin" style="font-weight: bold;"></td>
+      </tr>
+    </tfoot>
   </table>
 
   <script>
@@ -108,20 +119,43 @@
       });
     }
 
+    function obliczCzas(start, koniec) {
+      if (!start || !koniec) return { h: 0, m: 0 };
+
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = koniec.split(":").map(Number);
+      let startMin = sh * 60 + sm;
+      let endMin = eh * 60 + em;
+
+      if (endMin < startMin) endMin += 24 * 60; // przez północ
+      const totalMin = endMin - startMin;
+
+      return {
+        h: Math.floor(totalMin / 60),
+        m: totalMin % 60
+      };
+    }
+
+    function formatCzas(h, m) {
+      return `${h}h ${m}min`;
+    }
+
     async function wczytajGodziny() {
       const tbody = document.getElementById("tabelaGodzin");
+      const sumaTd = document.getElementById("sumaGodzin");
       tbody.innerHTML = "<tr><td colspan='5'>Ładowanie...</td></tr>";
+      sumaTd.innerText = "";
 
-      // Pobierz role użytkowników
       const rolaMap = {};
       const userSnap = await db.collection("users").get();
       userSnap.forEach(doc => {
         rolaMap[doc.id] = doc.data().rola || "—";
       });
 
-      // Pobierz wpisy z kolekcji "godziny"
       const godzinySnap = await db.collection("godziny").orderBy("data", "desc").limit(200).get();
       tbody.innerHTML = "";
+
+      let totalMinutes = 0;
 
       godzinySnap.forEach(doc => {
         const dane = doc.data();
@@ -129,17 +163,26 @@
         const rola = rolaMap[email] || "—";
 
         if (["pracownik", "kierownik", "dyrektor"].includes(rola)) {
+          const wejscie = dane.wejscie || "";
+          const wyjscie = dane.wyjscie || "";
+          const czas = obliczCzas(wejscie, wyjscie);
+          totalMinutes += czas.h * 60 + czas.m;
+
           const tr = document.createElement("tr");
           tr.innerHTML = `
             <td>${email}</td>
-            <td>${rola}</td>
             <td>${dane.data || "—"}</td>
-            <td>${dane.wejscie || "—"}</td>
-            <td>${dane.wyjscie || "—"}</td>
+            <td>${wejscie}</td>
+            <td>${wyjscie}</td>
+            <td>${formatCzas(czas.h, czas.m)}</td>
           `;
           tbody.appendChild(tr);
         }
       });
+
+      const totalH = Math.floor(totalMinutes / 60);
+      const totalM = totalMinutes % 60;
+      sumaTd.innerText = `${totalH}h ${totalM}min`;
     }
 
     async function usunUzytkownika(email) {
