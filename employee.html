@@ -191,10 +191,12 @@
     const db = firebase.firestore();
 
     let login = "";
+    let zapisaneDane = [];
     firebase.auth().onAuthStateChanged(user => {
       if (user) {
         login = user.email;
         document.getElementById("loginDisplay").innerText = "Zalogowany jako: " + login;
+        wczytaj();
       } else {
         window.location.href = "login.html";
       }
@@ -215,6 +217,7 @@
       try {
         await db.collection("urlopy").add({ login, od, do: do_, typ });
         alert("Urlop zapisany");
+        wczytaj();
       } catch (err) {
         console.error("Błąd zapisu urlopu:", err);
         alert("Błąd zapisu urlopu");
@@ -234,9 +237,41 @@
       try {
         await db.collection("godziny").add({ login, data, start, end, godziny });
         alert("Godziny zapisane");
+        wczytaj();
       } catch (err) {
         console.error("Błąd zapisu godzin:", err);
         alert("Błąd zapisu godzin");
+      }
+    }
+
+    async function wczytaj() {
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "<p>Ładowanie danych...</p>";
+      try {
+        const snap = await db.collection("godziny")
+          .where("login", "==", login)
+          .orderBy("data", "asc")
+          .get();
+
+        if (snap.empty) {
+          lista.innerHTML = "<p>Brak danych.</p>";
+          return;
+        }
+
+        zapisaneDane = [];
+        lista.innerHTML = "";
+
+        snap.forEach(doc => {
+          const g = doc.data();
+          zapisaneDane.push(g);
+          const el = document.createElement("div");
+          el.className = "entry";
+          el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
+          lista.appendChild(el);
+        });
+      } catch (err) {
+        console.error("Błąd wczytywania:", err);
+        lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
       }
     }
   </script>
