@@ -227,8 +227,8 @@
       const end = document.getElementById("end").value;
       if (!data || !start || !end) return alert("Uzupełnij wszystkie pola godzin!");
       if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
-      const [sh, sm] = start.split(":".map(Number));
-      const [eh, em] = end.split(":".map(Number));
+      const [sh, sm] = start.split(":".charAt(0)).map(Number);
+      const [eh, em] = end.split(":".charAt(0)).map(Number);
       const minutes = (eh * 60 + em) - (sh * 60 + sm);
       const godziny = (minutes / 60).toFixed(2);
       try {
