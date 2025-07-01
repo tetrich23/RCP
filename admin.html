@@ -170,7 +170,7 @@
         }
       });
 
-      if (data.rola.toLowerCase() === "admin") {
+      if (String(data.rola).toLowerCase() === "admin") {
         podwladni = Object.keys(mapaUzytkownikow);
       } else if (Array.isArray(data.podwladni)) {
         podwladni = data.podwladni;
