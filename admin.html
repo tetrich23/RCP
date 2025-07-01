@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-     body {
+    body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
       padding: 40px 20px;
@@ -246,7 +246,6 @@
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
 
-      // Pobierz wszystkich użytkowników
       const snapUzytkownicy = await db.collection("uzytkownicy").get();
       snapUzytkownicy.forEach(d => {
         const u = d.data();
@@ -275,6 +274,20 @@
       dane.sort((a, b) => new Date(b.data) - new Date(a.data));
 
       dane.forEach(row => {
+        const tr = document.createElement("tr");
+        const pracownik = mapaUzytkownikow[row.login] || row.login;
+
+        if (row.typ) {
+          tr.innerHTML = `
+            <td>${pracownik}</td>
+            <td>${row.data}</td>
+            <td colspan="4" style="font-weight:bold; text-align:center; text-transform:uppercase; color:#444;">${row.typ}</td>
+            <td><button onclick="usun('${row.id}')">🗑️</button></td>
+          `;
+          tabela.appendChild(tr);
+          return;
+        }
+
         const norma = getNorma(row.login);
         const godz = parseFloat(row.godziny);
         const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
@@ -285,9 +298,8 @@
           ? formatujGodzinyDziesietne(norma)
           : formatujGodzinyDziesietne(godz);
 
-        const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${mapaUzytkownikow[row.login] || row.login}</td>
+          <td>${pracownik}</td>
           <td>${row.data}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
@@ -299,6 +311,7 @@
       });
 
       const suma = dane.reduce((sum, r) => {
+        if (r.typ) return sum; // pomiń dni urlopowe
         let godz = parseFloat(r.godziny) || 0;
         if (r.status === "odrzucone" && godz > getNorma(r.login)) {
           godz = getNorma(r.login);
@@ -310,7 +323,7 @@
         <tr>
           <td colspan="4"><strong>Razem</strong></td>
           <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
-          <td colspan="3"></td>
+          <td colspan="2"></td>
         </tr>
       `;
     }
@@ -328,23 +341,6 @@
         data.godziny = obliczGodziny(data.start, data.end);
       }
       await ref.set(data);
-      location.reload();
-    }
-
-    async function zatwierdz(id) {
-      await db.collection("godziny").doc(id).update({ status: "zaakceptowane" });
-      location.reload();
-    }
-
-    async function odrzuc(id) {
-      const doc = await db.collection("godziny").doc(id).get();
-      const data = doc.data();
-      const norma = getNorma(data.login);
-      data.status = "odrzucone";
-      if (parseFloat(data.godziny) > norma) {
-        data.godziny = norma.toFixed(2);
-      }
-      await db.collection("godziny").doc(id).set(data);
       location.reload();
     }
 
@@ -368,6 +364,17 @@
     exportBtn.addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
       const daneDoXLSX = daneWidoczne.map(r => {
+        if (r.typ) {
+          return {
+            Pracownik: mapaUzytkownikow[r.login] || r.login,
+            Data: r.data,
+            Start: r.typ,
+            Koniec: r.typ,
+            Godziny: r.typ,
+            Status: r.typ
+          };
+        }
+
         const norma = getNorma(r.login);
         let godz = parseFloat(r.godziny) || 0;
         if (r.status === "odrzucone" && godz > norma) {
