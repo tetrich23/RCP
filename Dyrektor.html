@@ -172,7 +172,7 @@
       if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
 
       const podwladni = data.podwladni;
-      const snapUzytkownicy = await db.collection("users").get();
+      const snapUzytkownicy = await db.collection("uzytkownicy").get();
       snapUzytkownicy.forEach(d => {
         const u = d.data();
         if (u.imie && u.nazwisko) {
