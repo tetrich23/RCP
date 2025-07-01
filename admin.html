@@ -1,226 +1,241 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>Panel Kadry</title>
+  <meta charset="UTF-8" />
+  <title>Panel Pracownika</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f6f8fa; color: #333; }
-    h1 { text-align: center; color: #1e3c72; }
-    label { font-weight: 500; margin-right: 10px; }
-    select { padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; background: #fff; }
-    button { padding: 8px 16px; background-color: #1e90ff; color: white; border: none; border-radius: 6px; cursor: pointer; }
-    button:hover { background-color: #167ac6; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
-    th, td { padding: 10px; font-size: 14px; text-align: center; border-bottom: 1px solid #f0f0f0; }
-    th { background-color: #f1f4f9; }
-    td[contenteditable] { background-color: #fcfcfc; border: 1px dashed transparent; }
-    td[contenteditable]:hover { background-color: #f2f9ff; border-color: #cce4ff; }
-    td[contenteditable]:focus { outline: none; border: 1px solid #1e90ff; background-color: #eaf4ff; }
-    tfoot td { font-weight: bold; background-color: #f1f4f9; }
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #0f1115;
+      color: #e0e0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      background-color: #1a1c22;
+      padding: 40px 30px;
+      border-radius: 12px;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 24px;
+      color: #00d1b2;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      font-weight: 500;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #2a2d34;
+      color: #f1f1f1;
+      font-size: 15px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background-color: #00bfa6;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #zakladki {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .zakladka {
+      cursor: pointer;
+      padding: 10px;
+      border-bottom: 2px solid transparent;
+    }
+    .zakladka.active {
+      border-color: #00d1b2;
+      color: #00d1b2;
+    }
+    #formGodziny, #formUrlopy {
+      display: none;
+    }
+    #lista {
+      margin-top: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .entry {
+      background-color: #23262c;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Panel Pracownika</h2>
+    <div id="zakladki">
+      <div id="tabGodziny" class="zakladka active" onclick="switchTab('godziny')">Godziny</div>
+      <div id="tabUrlopy" class="zakladka" onclick="switchTab('urlopy')">Urlop</div>
+    </div>
 
-<h1>Panel Kadr</h1>
+    <div id="formGodziny">
+      <label for="data">Data:</label>
+      <input type="date" id="data">
 
-<label>Pracownik:
-  <select id="filterUser"><option value="">Wszyscy</option></select>
-</label>
+      <label for="start">Godzina przyjścia:</label>
+      <input type="time" id="start">
 
-<label>Miesiąc:
-  <select id="filterMonth"><option value="">Wszystkie</option></select>
-</label>
+      <label for="end">Godzina wyjścia:</label>
+      <input type="time" id="end">
 
-<button id="exportBtn">Eksportuj</button>
+      <button onclick="zapiszGodziny()">Zapisz</button>
+    </div>
 
-<table id="tabela-pracownikow">
-  <thead>
-    <tr>
-      <th>Pracownik</th>
-      <th>Data</th>
-      <th>Start</th>
-      <th>Koniec</th>
-      <th>Godziny</th>
-      <th>Akcje</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-  <tfoot></tfoot>
-</table>
+    <div id="formUrlopy">
+      <label for="startU">Od:</label>
+      <input type="date" id="startU">
 
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
-  authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
-  projectId: "rejestracja-czasu-pracy-e345e"
-};
+      <label for="endU">Do:</label>
+      <input type="date" id="endU">
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+      <label for="typUrlopu">Typ urlopu:</label>
+      <select id="typUrlopu">
+        <option value="">-- Wybierz --</option>
+        <option>Urlop wypoczynkowy</option>
+        <option>Urlop na żądanie</option>
+        <option>Urlop okolicznościowy</option>
+        <option>Urlop macierzyński</option>
+        <option>Urlop ojcowski</option>
+        <option>Urlop rodzicielski</option>
+        <option>Urlop wychowawczy</option>
+        <option>Urlop opiekuńczy / opieka nad dzieckiem</option>
+        <option>Zwolnienie z powodu siły wyższej</option>
+        <option>Urlop szkoleniowy</option>
+        <option>Dzień wolny za honorowe oddawanie krwi</option>
+        <option>Urlop bezpłatny</option>
+        <option>Zwolnienie lekarskie (L4)</option>
+        <option>Urlop na ślub pracownika</option>
+        <option>Urlop na ślub dziecka</option>
+        <option>Urlop wojskowy</option>
+        <option>Urlop na cele adopcyjne</option>
+      </select>
 
-let mapaUzytkownikow = {};
+      <button onclick="zapiszUrlop()">Zapisz urlop</button>
+    </div>
 
-function formatGodzinyLudzkie(godzinyString) {
-  const liczba = parseFloat(godzinyString);
-  const godziny = Math.floor(liczba);
-  const minuty = Math.round((liczba - godziny) * 60);
-  return `${godziny}h ${minuty.toString().padStart(2, '0')}min`;
-}
+    <div id="lista"><p>Brak danych.</p></div>
+  </div>
 
-firebase.auth().onAuthStateChanged(user => {
-  if (!user) {
-    alert("Musisz być zalogowany.");
-    window.location.href = "login.html";
-  } else {
-    zaladujUzytkownikow().then(wczytaj);
-  }
-});
-
-const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
-const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
-const filterUser  = document.getElementById("filterUser");
-const filterMonth = document.getElementById("filterMonth");
-const exportBtn   = document.getElementById("exportBtn");
-let aktualneDane  = [];
-
-async function zaladujUzytkownikow() {
-  const snap = await db.collection("uzytkownicy").get();
-  snap.docs.forEach(doc => {
-    const data = doc.data();
-    mapaUzytkownikow[doc.id] = `${data.imie || ""} ${data.nazwisko || ""}`.trim();
-  });
-}
-
-function obliczGodziny(start, end) {
-  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
-  const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
-  const godziny = ((eh * 60 + parseInt(em)) - (sh * 60 + parseInt(sm))) / 60;
-  return godziny > 0 ? godziny.toFixed(2) : "0.00";
-}
-
-async function wczytaj() {
-  const snapshot = await db.collection("godziny").get();
-  const wszystkieDane = snapshot.docs.map(doc => {
-    const d = doc.data();
-    return {
-      id: doc.id,
-      login: d.login || "",
-      nazwisko: mapaUzytkownikow[d.login] || d.login,
-      data: d.data || "",
-      start: d.start || "",
-      end: d.end || "",
-      godziny: d.godziny || obliczGodziny(d.start, d.end),
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+      authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+      projectId: "rejestracja-czasu-pracy-e345e",
+      storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
+      messagingSenderId: "198373663295",
+      appId: "1:198373663295:web:a2a07384d8814101254e8a"
     };
-  });
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
-  if (filterUser.options.length <= 1) {
-    filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-      unikalni.map(u => `<option value="${u}">${mapaUzytkownikow[u] || u}</option>`).join('');
-  }
+    let login = "";
+    let aktywnaZakladka = "godziny";
 
-  const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
-  if (filterMonth.options.length <= 1) {
-    filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
-      miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
-  }
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        login = user.email;
+        wczytajGodziny();
+      } else {
+        location.href = "index.html";
+      }
+    });
 
-  aktualneDane = wszystkieDane.filter(d =>
-    (!filterUser.value || d.login === filterUser.value) &&
-    (!filterMonth.value || d.data?.startsWith(filterMonth.value))
-  );
+    function switchTab(tab) {
+      aktywnaZakladka = tab;
+      document.getElementById("tabGodziny").classList.remove("active");
+      document.getElementById("tabUrlopy").classList.remove("active");
+      document.getElementById("formGodziny").style.display = "none";
+      document.getElementById("formUrlopy").style.display = "none";
+      document.getElementById("lista").innerHTML = "";
 
-  aktualneDane.sort((a, b) => new Date(b.data) - new Date(a.data));
+      if (tab === "godziny") {
+        document.getElementById("tabGodziny").classList.add("active");
+        document.getElementById("formGodziny").style.display = "block";
+        wczytajGodziny();
+      } else {
+        document.getElementById("tabUrlopy").classList.add("active");
+        document.getElementById("formUrlopy").style.display = "block";
+        wczytajUrlopy();
+      }
+    }
 
-  tabelaBody.innerHTML = "";
-  aktualneDane.forEach(d => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${d.nazwisko}</td>
-      <td>${d.data}</td>
-      <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
-      <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
-      <td>${formatGodzinyLudzkie(d.godziny)}</td>
-      <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
-    `;
-    tabelaBody.appendChild(tr);
-  });
+    async function zapiszGodziny() {
+      const data = document.getElementById("data").value;
+      const start = document.getElementById("start").value;
+      const end = document.getElementById("end").value;
 
-  const suma = aktualneDane.reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0).toFixed(2);
-  tabelaFoot.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${formatGodzinyLudzkie(suma)}</strong></td><td></td></tr>`;
-}
+      if (!data || !start || !end || start >= end) return alert("Uzupełnij poprawnie dane.");
+      const godziny = ((new Date(`1970-01-01T${end}`) - new Date(`1970-01-01T${start}`)) / 3600000).toFixed(2);
+      await db.collection("godziny").add({ login, data, start, end, godziny });
+      alert("Zapisano godziny.");
+      wczytajGodziny();
+    }
 
-async function zapiszZmiane(id, pole, wartosc) {
-  if ((pole === "start" || pole === "end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
-    alert("Nieprawidłowy format godziny (HH:MM)");
-    wczytaj();
-    return;
-  }
-  const ref = db.collection("godziny").doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  const dane = snap.data();
-  dane[pole] = wartosc;
-  if (dane.start && dane.end) dane.godziny = obliczGodziny(dane.start, dane.end);
-  await ref.set(dane);
-  wczytaj();
-}
+    async function zapiszUrlop() {
+      const start = document.getElementById("startU").value;
+      const end = document.getElementById("endU").value;
+      const typ = document.getElementById("typUrlopu").value;
+      if (!start || !end || !typ) return alert("Uzupełnij wszystkie dane urlopu.");
 
-async function usunRekord(id) {
-  if (confirm("Usunąć wpis?")) {
-    await db.collection("godziny").doc(id).delete();
-    wczytaj();
-  }
-}
+      await db.collection("urlopy").add({ login, start, end, typ });
+      alert("Zapisano urlop.");
+      wczytajUrlopy();
+    }
 
-exportBtn.addEventListener("click", () => {
-  const wb = XLSX.utils.book_new();
+    async function wczytajGodziny() {
+      const lista = document.getElementById("lista");
+      const snap = await db.collection("godziny").where("login", "==", login).orderBy("data", "desc").get();
+      lista.innerHTML = snap.empty ? "<p>Brak godzin.</p>" : "";
+      snap.forEach(doc => {
+        const g = doc.data();
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerText = `${g.data}: ${g.start} - ${g.end} (${g.godziny}h)`;
+        lista.appendChild(div);
+      });
+    }
 
-  const posortowane = [...aktualneDane].sort((a, b) => {
-    const nazwiskoPorownanie = a.nazwisko.localeCompare(b.nazwisko, 'pl');
-    if (nazwiskoPorownanie !== 0) return nazwiskoPorownanie;
-    return new Date(a.data) - new Date(b.data);
-  });
-
-  const daneDoEksportu = posortowane.map(row => ({
-    Pracownik: row.nazwisko,
-    Data: row.data,
-    Start: row.start,
-    Koniec: row.end,
-    Godziny: formatGodzinyLudzkie(row.godziny)
-  }));
-
-  const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
-  XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
-
-  const raport = posortowane.map(row => {
-    const kod = row.login.split("@")[0];
-    return {
-      "Kod pracownika": kod,
-      "Data": row.data,
-      "Rodzaj czasu": "PRACA",
-      "Od godziny": row.start,
-      "Do godziny": row.end,
-      "Liczba godzin": formatGodzinyLudzkie(row.godziny),
-      "Opis": "Ewidencja RCP"
-    };
-  });
-
-  const ws2 = XLSX.utils.json_to_sheet(raport);
-  XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
-
-  XLSX.writeFile(wb, "raport_miesieczny.xlsx");
-});
-
-filterUser.addEventListener("change", wczytaj);
-filterMonth.addEventListener("change", wczytaj);
-window.zapiszZmiane = zapiszZmiane;
-window.usunRekord = usunRekord;
-</script>
-
+    async function wczytajUrlopy() {
+      const lista = document.getElementById("lista");
+      const snap = await db.collection("urlopy").where("login", "==", login).orderBy("start", "desc").get();
+      lista.innerHTML = snap.empty ? "<p>Brak urlopów.</p>" : "";
+      snap.forEach(doc => {
+        const u = doc.data();
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerText = `${u.start} do ${u.end}: ${u.typ}`;
+        lista.appendChild(div);
+      });
+    }
+  </script>
 </body>
 </html>
