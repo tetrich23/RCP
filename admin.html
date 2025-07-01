@@ -98,7 +98,6 @@
     <button id="tabUrlopy" onclick="pokazPanel('urlopy')">Urlopy</button>
   </div>
 
-  <!-- Panel Godziny -->
   <div id="panelGodziny" class="panel active">
     <div>
       <label>Pracownik:</label>
@@ -127,7 +126,6 @@
     </table>
   </div>
 
-  <!-- Panel Urlopy -->
   <div id="panelUrlopy" class="panel">
     <div>
       <label>Pracownik:</label>
@@ -144,6 +142,7 @@
         <tr>
           <th>Pracownik</th>
           <th>Data</th>
+          <th>Dni</th>
           <th>Rodzaj</th>
         </tr>
       </thead>
@@ -164,8 +163,9 @@
     const db = firebase.firestore();
 
     let daneWidoczne = [];
+    let daneUrlopy = [];
     let mapaUzytkownikow = {};
-    const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
+    const login10h = ["a.krzon@naszprad.com","e.labaz@naszprad.com","n.gmitruk@naszprad.com","p.haczkiewicz@naszprad.com"];
 
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
@@ -181,30 +181,29 @@
       const select1 = document.getElementById("filterLogin");
       const select2 = document.getElementById("filterLoginUrlopy");
       Object.entries(mapaUzytkownikow).forEach(([email, name]) => {
-        const option1 = document.createElement("option");
-        option1.value = email;
-        option1.textContent = name;
-        select1.appendChild(option1);
-
-        const option2 = document.createElement("option");
-        option2.value = email;
-        option2.textContent = name;
-        select2.appendChild(option2);
+        const o1 = document.createElement("option");
+        o1.value = email;
+        o1.textContent = name;
+        select1.appendChild(o1);
+        const o2 = document.createElement("option");
+        o2.value = email;
+        o2.textContent = name;
+        select2.appendChild(o2);
       });
 
       const snap = await db.collection("godziny").get();
-      daneWidoczne = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      daneWidoczne = snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
       renderujTabele(daneWidoczne);
 
       const snapUrlopy = await db.collection("urlopy").get();
-      daneUrlopy = snapUrlopy.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      daneUrlopy = snapUrlopy.docs.map(doc => ({id: doc.id, ...doc.data()}));
       renderujUrlopy(daneUrlopy);
     });
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
       const [eh, em] = end.split(":").map(Number);
-      return (((eh * 60 + em) - (sh * 60 + sm)) / 60).toFixed(2);
+      return (((eh*60+em)-(sh*60+sm))/60).toFixed(2);
     }
 
     function getNorma(login) {
@@ -213,180 +212,104 @@
 
     function formatujGodzinyDziesietne(decimalHours) {
       const godziny = Math.floor(decimalHours);
-      const minuty = Math.round((decimalHours - godziny) * 60);
+      const minuty = Math.round((decimalHours - godziny)*60);
       return `${godziny}h ${minuty}min`;
     }
 
+    function obliczIloscDni(od, doDaty) {
+      if (!od && !doDaty) return "-";
+      const dataOd = new Date(od);
+      const dataDo = doDaty ? new Date(doDaty) : dataOd;
+      const diffTime = dataDo - dataOd;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      return diffDays > 0 ? diffDays : 1;
+    }
+
     function renderujTabele(dane) {
-      const tabela = document.getElementById("tabela");
-      const stopka = document.getElementById("stopka");
-      tabela.innerHTML = "";
-      stopka.innerHTML = "";
-
-      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
+      const tbody = document.getElementById("tabela");
+      tbody.innerHTML = "";
+      let suma = 0;
       dane.forEach(row => {
+        const godziny = obliczGodziny(row.start,row.koniec);
+        suma += parseFloat(godziny);
         const tr = document.createElement("tr");
-        const pracownik = mapaUzytkownikow[row.login] || row.login;
-
-        if (row.typ) {
-          tr.innerHTML = `
-            <td>${pracownik}</td>
-            <td>${row.data}</td>
-            <td colspan="4">${row.typ}</td>
-            <td><button onclick="usun('${row.id}')">🗑️</button></td>
-          `;
-          tabela.appendChild(tr);
-          return;
-        }
-
-        const norma = getNorma(row.login);
-        const godz = parseFloat(row.godziny);
-        const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
-        const pokazGodziny = (godz > norma && status === "odrzucone")
-          ? formatujGodzinyDziesietne(norma)
-          : formatujGodzinyDziesietne(godz);
-
         tr.innerHTML = `
-          <td>${pracownik}</td>
+          <td>${mapaUzytkownikow[row.login]||row.login}</td>
           <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
-          <td>${pokazGodziny}</td>
-          <td>${status}</td>
+          <td><input value="${row.start}" onchange="zapisz('${row.id}','start',this.value)"></td>
+          <td><input value="${row.koniec}" onchange="zapisz('${row.id}','koniec',this.value)"></td>
+          <td>${formatujGodzinyDziesietne(godziny)}</td>
+          <td>${parseFloat(godziny)>=getNorma(row.login)?"✅":"❌"}</td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
         `;
-        tabela.appendChild(tr);
+        tbody.appendChild(tr);
       });
-
-      const suma = dane.reduce((sum, r) => {
-        if (r.typ) return sum;
-        let godz = parseFloat(r.godziny) || 0;
-        if (r.status === "odrzucone" && godz > getNorma(r.login)) godz = getNorma(r.login);
-        return sum + godz;
-      }, 0).toFixed(2);
-
-      stopka.innerHTML = `
-        <tr>
-          <td colspan="4"><strong>Razem</strong></td>
-          <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
-          <td colspan="2"></td>
-        </tr>
-      `;
+      const tfoot = document.getElementById("stopka");
+      tfoot.innerHTML = `<tr><td colspan="4"><b>Suma:</b></td><td colspan="3"><b>${formatujGodzinyDziesietne(suma)}</b></td></tr>`;
     }
 
     function renderujUrlopy(dane) {
-  const tbody = document.getElementById("tabelaUrlopy");
-  tbody.innerHTML = "";
-
-  const dzisiaj = new Date();
-  dzisiaj.setHours(0, 0, 0, 0); // dla porównań tylko daty
-
-  const filtrowane = dane.filter(row => {
-    if (row.do) {
-      const dataDo = new Date(row.do);
-      dataDo.setHours(0, 0, 0, 0);
-      return dataDo >= dzisiaj;
+      const tbody = document.getElementById("tabelaUrlopy");
+      tbody.innerHTML = "";
+      dane.forEach(row => {
+        const dni = obliczIloscDni(row.od,row.do);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${mapaUzytkownikow[row.login]||row.login}</td>
+          <td>${row.od}${row.do?" - "+row.do:""}</td>
+          <td>${dni}</td>
+          <td>${row.rodzaj}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
-    if (row.data) {
-      const dataJednodniowa = new Date(row.data);
-      dataJednodniowa.setHours(0, 0, 0, 0);
-      return dataJednodniowa >= dzisiaj;
-    }
-    return false;
-  });
 
-  filtrowane.sort((a, b) => new Date(b.od || b.data) - new Date(a.od || a.data));
-
-  filtrowane.forEach(row => {
-    const pracownik = mapaUzytkownikow[row.login] || row.login;
-    const zakres = row.od && row.do ? `${row.od} – ${row.do}` : (row.data || "brak");
-    const dni = obliczIloscDni(row.od, row.do);
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${pracownik}</td>
-      <td>${zakres}</td>
-      <td>${dni}</td>
-      <td>${row.rodzaj || "Urlop"}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-    function pokazPanel(nazwa) {
-      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
-      document.getElementById("panel" + nazwa.charAt(0).toUpperCase() + nazwa.slice(1)).classList.add("active");
-      document.getElementById("tab" + nazwa.charAt(0).toUpperCase() + nazwa.slice(1)).classList.add("active");
+    function pokazPanel(panel) {
+      document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+      document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+      document.getElementById(`panel${panel.charAt(0).toUpperCase()+panel.slice(1)}`).classList.add("active");
+      document.getElementById(`tab${panel.charAt(0).toUpperCase()+panel.slice(1)}`).classList.add("active");
     }
 
     function filtruj() {
-      const log = document.getElementById("filterLogin").value;
-      const dat = document.getElementById("filterDate").value;
-      const wynik = daneWidoczne.filter(r =>
-        (log === "" || r.login === log) &&
-        (dat === "" || r.data === dat)
-      );
-      renderujTabele(wynik);
+      const login = document.getElementById("filterLogin").value;
+      const data = document.getElementById("filterDate").value;
+      renderujTabele(daneWidoczne.filter(r=>
+        (!login || r.login==login) && (!data || r.data==data)
+      ));
     }
 
     function filtrujUrlopy() {
-      const log = document.getElementById("filterLoginUrlopy").value;
-      const dat = document.getElementById("filterDateUrlopy").value;
-      const wynik = daneUrlopy.filter(r =>
-        (log === "" || r.login === log) &&
-        (dat === "" || r.data === dat)
-      );
-      renderujUrlopy(wynik);
+      const login = document.getElementById("filterLoginUrlopy").value;
+      const data = document.getElementById("filterDateUrlopy").value;
+      renderujUrlopy(daneUrlopy.filter(r=>
+        (!login || r.login==login) && (!data || r.od==data || r.do==data)
+      ));
     }
 
-    async function zapisz(id, pole, wartosc) {
-      if (!/^\d{2}:\d{2}$/.test(wartosc)) return alert("Zły format (HH:MM)");
-      const ref = db.collection("godziny").doc(id);
-      const doc = await ref.get();
-      const data = doc.data();
-      data[pole] = wartosc;
-      if (data.start && data.end) {
-        data.godziny = obliczGodziny(data.start, data.end);
-      }
-      await ref.set(data);
-      location.reload();
+    function zapisz(id,field,value) {
+      db.collection("godziny").doc(id).update({[field]:value});
     }
 
-    async function usun(id) {
-      if (confirm("Usunąć wpis?")) {
-        await db.collection("godziny").doc(id).delete();
-        location.reload();
+    function usun(id) {
+      if(confirm("Na pewno usunąć?")) {
+        db.collection("godziny").doc(id).delete().then(()=>location.reload());
       }
     }
 
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      const daneDoXLSX = daneWidoczne.map(r => ({
-        Pracownik: mapaUzytkownikow[r.login] || r.login,
-        Data: r.data,
-        Start: r.start || r.typ,
-        Koniec: r.end || r.typ,
-        Godziny: formatujGodzinyDziesietne(parseFloat(r.godziny || 0)),
-        Status: r.status || "zaakceptowane"
-      }));
-      const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
+    document.getElementById("exportBtn").onclick = ()=> {
       const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.table_to_sheet(document.querySelector("#panelGodziny table"));
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-      XLSX.writeFile(wb, "godziny_admin.xlsx");
-    });
+      XLSX.writeFile(wb, "godziny.xlsx");
+    };
 
-    document.getElementById("exportBtnUrlopy").addEventListener("click", () => {
-      const daneDoXLSX = daneUrlopy.map(r => ({
-        Pracownik: mapaUzytkownikow[r.login] || r.login,
-        Data: r.data,
-        Rodzaj: r.rodzaj || "Urlop"
-      }));
-      const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
+    document.getElementById("exportBtnUrlopy").onclick = ()=> {
       const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.table_to_sheet(document.querySelector("#panelUrlopy table"));
       XLSX.utils.book_append_sheet(wb, ws, "Urlopy");
-      XLSX.writeFile(wb, "urlopy_admin.xlsx");
-    });
-
-    let daneUrlopy = [];
+      XLSX.writeFile(wb, "urlopy.xlsx");
+    };
   </script>
 </body>
 </html>
