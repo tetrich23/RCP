@@ -4,57 +4,77 @@
   <meta charset="UTF-8" />
   <title>Panel Administratora</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
+    /* global */
     body {
-      font-family: Arial, sans-serif;
-      margin: 40px;
-      background-color: #f8f8f8;
-    }
-
-    h1 {
-      margin-bottom: 30px;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 40px;
-      background-color: white;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f2f5fc;
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: linear-gradient(to right, #e9eff5, #fdfdfd);
       color: #333;
     }
-
-    tfoot td {
-      background-color: #f2f5fc;
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    h2 {
+      margin-top: 40px;
+      margin-bottom: 10px;
+      font-size: 20px;
+      color: #2c3e50;
     }
 
+    /* tables */
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background-color: white;
+    }
+    thead th {
+      background-color: #f5f7fa;
+      padding: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+      text-align: left;
+    }
+    tbody td, tfoot td {
+      padding: 10px;
+      border-top: 1px solid #e0e6ed;
+      font-size: 14px;
+      text-align: left;
+    }
+    tfoot td {
+      background-color: #f5f7fa;
+    }
+
+    /* buttons */
     .danger {
-      background-color: #dc3545;
+      background-color: #c0392b;
       color: white;
       border: none;
       padding: 6px 10px;
       cursor: pointer;
       border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.3s;
     }
-
     .danger:hover {
-      background-color: #c82333;
+      background-color: #922b21;
     }
   </style>
 </head>
 <body>
-  <h1>Panel administratora</h1>
+  <h1>Panel Administratora</h1>
 
   <h2>Użytkownicy</h2>
   <table>
@@ -65,24 +85,28 @@
         <th>Akcja</th>
       </tr>
     </thead>
-    <tbody id="listaUzytkownikow"></tbody>
+    <tbody id="listaUzytkownikow">
+      <!-- wczytywane przez JS -->
+    </tbody>
   </table>
 
   <h2>Rejestr wejść/wyjść</h2>
   <table>
     <thead>
       <tr>
-        <th>PRACOWNIK</th>
-        <th>DATA</th>
-        <th>START</th>
-        <th>KONIEC</th>
-        <th>GODZINY</th>
+        <th>Pracownik</th>
+        <th>Data</th>
+        <th>Start</th>
+        <th>Koniec</th>
+        <th>Godziny</th>
       </tr>
     </thead>
-    <tbody id="tabelaGodzin"></tbody>
+    <tbody id="tabelaGodzin">
+      <!-- wczytywane przez JS -->
+    </tbody>
     <tfoot>
       <tr>
-        <td colspan="4" style="text-align: right; font-weight: bold;">Razem</td>
+        <td colspan="4" style="font-weight: bold; text-align: right;">Razem</td>
         <td id="sumaGodzin" style="font-weight: bold;"></td>
       </tr>
     </tfoot>
@@ -95,112 +119,86 @@
       projectId: "rejestracja-czasu-pracy-e345e",
       storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
       messagingSenderId: "198373663295",
-      appId: "1:198373663295:web:a2a07384d8814101254e8a",
-      measurementId: "G-6CG743TGTS"
+      appId: "1:198373663295:web:a2a07384d8814101254e8a"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    async function wczytajUzytkownikow() {
-      const tbody = document.getElementById("listaUzytkownikow");
-      tbody.innerHTML = "";
-
-      const snap = await db.collection("users").get();
-      snap.forEach(doc => {
-        const dane = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${doc.id}</td>
-          <td>${dane.rola || "—"}</td>
-          <td><button class="danger" onclick="usunUzytkownika('${doc.id}')">Usuń</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
     function obliczCzas(start, koniec) {
       if (!start || !koniec) return { h: 0, m: 0 };
-
       const [sh, sm] = start.split(":").map(Number);
       const [eh, em] = koniec.split(":").map(Number);
-      let startMin = sh * 60 + sm;
-      let endMin = eh * 60 + em;
-
-      if (endMin < startMin) endMin += 24 * 60; // przez północ
-      const totalMin = endMin - startMin;
-
-      return {
-        h: Math.floor(totalMin / 60),
-        m: totalMin % 60
-      };
+      let startMin = sh * 60 + sm, endMin = eh * 60 + em;
+      if (endMin < startMin) endMin += 24 * 60;
+      const diff = endMin - startMin;
+      return { h: Math.floor(diff / 60), m: diff % 60 };
     }
 
     function formatCzas(h, m) {
       return `${h}h ${m}min`;
     }
 
+    async function wczytajUzytkownikow() {
+      const tbody = document.getElementById("listaUzytkownikow");
+      tbody.innerHTML = "";
+      const snap = await db.collection("users").get();
+      snap.forEach(doc => {
+        const data = doc.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${doc.id}</td>
+          <td>${data.rola || "—"}</td>
+          <td><button class="danger" onclick="usunUzytkownika('${doc.id}')">Usuń</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
     async function wczytajGodziny() {
       const tbody = document.getElementById("tabelaGodzin");
       const sumaTd = document.getElementById("sumaGodzin");
-      tbody.innerHTML = "<tr><td colspan='5'>Ładowanie...</td></tr>";
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px">Ładowanie...</td></tr>`;
       sumaTd.innerText = "";
-
       const rolaMap = {};
-      const userSnap = await db.collection("users").get();
-      userSnap.forEach(doc => {
-        rolaMap[doc.id] = doc.data().rola || "—";
-      });
+      (await db.collection("users").get())
+        .forEach(d => rolaMap[d.id] = d.data().rola || "—");
 
-      const godzinySnap = await db.collection("godziny").orderBy("data", "desc").limit(200).get();
+      const godzSnap = await db.collection("godziny")
+        .orderBy("data","desc").limit(200).get();
       tbody.innerHTML = "";
+      let totalMin = 0;
 
-      let totalMinutes = 0;
-
-      godzinySnap.forEach(doc => {
-        const dane = doc.data();
-        const email = dane.email || "—";
-        const rola = rolaMap[email] || "—";
-
-        if (["pracownik", "kierownik", "dyrektor"].includes(rola)) {
-          const wejscie = dane.wejscie || "";
-          const wyjscie = dane.wyjscie || "";
-          const czas = obliczCzas(wejscie, wyjscie);
-          totalMinutes += czas.h * 60 + czas.m;
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${email}</td>
-            <td>${dane.data || "—"}</td>
-            <td>${wejscie}</td>
-            <td>${wyjscie}</td>
-            <td>${formatCzas(czas.h, czas.m)}</td>
-          `;
-          tbody.appendChild(tr);
-        }
+      godzSnap.forEach(doc => {
+        const d = doc.data(), email = d.email || "—";
+        if (!["pracownik","kierownik","dyrektor"].includes(rolaMap[email])) return;
+        const czas = obliczCzas(d.wejscie||"", d.wyjscie||"");
+        totalMin += czas.h*60 + czas.m;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${email}</td>
+          <td>${d.data || "—"}</td>
+          <td>${d.wejscie || ""}</td>
+          <td>${d.wyjscie || ""}</td>
+          <td>${formatCzas(czas.h, czas.m)}</td>
+        `;
+        tbody.appendChild(tr);
       });
 
-      const totalH = Math.floor(totalMinutes / 60);
-      const totalM = totalMinutes % 60;
-      sumaTd.innerText = `${totalH}h ${totalM}min`;
+      const h = Math.floor(totalMin/60), m = totalMin%60;
+      sumaTd.innerText = formatCzas(h, m);
     }
 
     async function usunUzytkownika(email) {
-      if (confirm(`Czy na pewno chcesz usunąć użytkownika: ${email}?`)) {
-        await db.collection("users").doc(email).delete();
-        alert("Użytkownik usunięty.");
-        wczytajUzytkownikow();
-        wczytajGodziny();
-      }
+      if (!confirm(`Czy na pewno usunąć: ${email}?`)) return;
+      await db.collection("users").doc(email).delete();
+      wczytajUzytkownikow();
+      wczytajGodziny();
     }
 
-    firebase.auth().onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = "index.html";
-      } else {
-        wczytajUzytkownikow();
-        wczytajGodziny();
-      }
+    firebase.auth().onAuthStateChanged(u => {
+      if (!u) return location.href="index.html";
+      wczytajUzytkownikow();
+      wczytajGodziny();
     });
   </script>
 </body>
