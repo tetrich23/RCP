@@ -34,7 +34,6 @@
       margin-bottom: 24px;
       color: #00d1b2;
       font-weight: 700;
-      letter-spacing: 0.5px;
     }
 
     label {
@@ -44,48 +43,31 @@
       color: #b0b0b0;
     }
 
-    input {
+    input, button, select {
       width: 100%;
-      padding: 12px 14px;
+      padding: 12px;
       margin-bottom: 12px;
       border: none;
       border-radius: 6px;
+      font-size: 15px;
       background-color: #2a2d34;
       color: #f1f1f1;
-      font-size: 15px;
-      transition: box-shadow 0.2s;
     }
 
-    input:focus {
+    input:focus, select:focus {
       outline: none;
       box-shadow: 0 0 0 2px #00d1b2;
     }
 
     button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
       background-color: #00bfa6;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      color: #fff;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s ease, transform 0.1s;
+      transition: background-color 0.2s;
     }
 
     button:hover {
       background-color: #00a893;
-      transform: translateY(-1px);
-    }
-
-    #lista {
-      margin-top: 30px;
-      max-height: 220px;
-      overflow-y: auto;
-      border-top: 1px solid #2d2f36;
-      padding-top: 10px;
     }
 
     .entry {
@@ -93,7 +75,6 @@
       padding: 10px 15px;
       margin-bottom: 10px;
       border-radius: 6px;
-      color: #ccc;
       font-size: 14px;
       font-family: monospace;
     }
@@ -105,16 +86,18 @@
       margin-bottom: 20px;
     }
 
-    input[type="date"],
-    input[type="time"] {
-      font-family: 'Roboto', sans-serif;
-      font-size: 15px;
-      color: #f1f1f1;
-      background-color: #2a2d34;
-      border: none;
-      padding: 12px 14px;
-      border-radius: 6px;
-      appearance: none;
+    .tab-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .tab-buttons button {
+      width: 48%;
+    }
+
+    .hidden {
+      display: none;
     }
   </style>
 </head>
@@ -123,16 +106,34 @@
     <h2>Panel Pracownika</h2>
     <p id="loginDisplay">Sprawdzanie sesji...</p>
 
-    <label for="data">Data:</label>
-    <input type="date" id="data">
+    <div class="tab-buttons">
+      <button onclick="switchTab('godziny')">Godziny</button>
+      <button onclick="switchTab('urlop')">Urlop</button>
+    </div>
 
-    <label for="start">Godzina przyjścia:</label>
-    <input type="time" id="start">
+    <div id="godzinyForm">
+      <label for="data">Data:</label>
+      <input type="date" id="data" />
 
-    <label for="end">Godzina wyjścia:</label>
-    <input type="time" id="end">
+      <label for="start">Godzina przyjścia:</label>
+      <input type="time" id="start" />
 
-    <button onclick="zapisz()">Zapisz</button>
+      <label for="end">Godzina wyjścia:</label>
+      <input type="time" id="end" />
+
+      <button onclick="zapisz()">Zapisz</button>
+    </div>
+
+    <div id="urlopForm" class="hidden">
+      <label for="urlopStart">Urlop od:</label>
+      <input type="date" id="urlopStart" />
+
+      <label for="urlopEnd">Urlop do:</label>
+      <input type="date" id="urlopEnd" />
+
+      <button onclick="zapiszUrlop()">Zapisz urlop</button>
+    </div>
+
     <button onclick="eksportuj()">Eksportuj do Excela</button>
     <button onclick="drukuj()">Drukuj</button>
 
@@ -146,8 +147,7 @@
       projectId: "rejestracja-czasu-pracy-e345e",
       storageBucket: "rejestracja-czasu-pracy-e345e.appspot.com",
       messagingSenderId: "198373663295",
-      appId: "1:198373663295:web:a2a07384d8814101254e8a",
-      measurementId: "G-6CG743TGTS"
+      appId: "1:198373663295:web:a2a07384d8814101254e8a"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -161,87 +161,81 @@
         document.getElementById("loginDisplay").innerText = "Zalogowany jako: " + login;
         wczytaj();
       } else {
-        window.location.href = "login.html";
+        location.href = "login.html";
       }
     });
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
       const [eh, em] = end.split(":").map(Number);
-      const minutes = (eh * 60 + em) - (sh * 60 + sm);
-      return (minutes / 60).toFixed(2);
+      return ((eh * 60 + em - (sh * 60 + sm)) / 60).toFixed(2);
     }
 
-    function formatujGodziny(godzinyString) {
-      const liczba = parseFloat(godzinyString);
-      const godziny = Math.floor(liczba);
-      const minuty = Math.round((liczba - godziny) * 60);
-      return `${godziny}h ${minuty.toString().padStart(2, '0')}min`;
+    function formatujGodziny(decimal) {
+      const liczba = parseFloat(decimal);
+      const godz = Math.floor(liczba);
+      const min = Math.round((liczba - godz) * 60);
+      return `${godz}h ${min.toString().padStart(2, '0')}min`;
     }
 
     async function zapisz() {
       const data = document.getElementById("data").value;
       const start = document.getElementById("start").value;
       const end = document.getElementById("end").value;
-
       if (!data || !start || !end) return alert("Uzupełnij wszystkie pola!");
-      if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
+      if (start >= end) return alert("Błędne godziny!");
 
       const godziny = obliczGodziny(start, end);
+      await db.collection("godziny").add({ login, data, start, end, godziny });
+      wczytaj();
+    }
 
-      try {
-        await db.collection("godziny").add({ login, data, start, end, godziny });
-        alert("Zapisano.");
-        wczytaj();
-      } catch (err) {
-        console.error("Błąd zapisu:", err);
-        alert("Błąd zapisu. Spróbuj ponownie.");
+    async function zapiszUrlop() {
+      const start = document.getElementById("urlopStart").value;
+      const end = document.getElementById("urlopEnd").value;
+      if (!start || !end || start > end) return alert("Nieprawidłowy zakres dat.");
+
+      const dateStart = new Date(start);
+      const dateEnd = new Date(end);
+      for (let d = new Date(dateStart); d <= dateEnd; d.setDate(d.getDate() + 1)) {
+        const s = d.toISOString().split("T")[0];
+        await db.collection("godziny").add({
+          login, data: s, start: "", end: "", godziny: "0.00", status: "urlop"
+        });
       }
+      alert("Urlop zapisany.");
+      wczytaj();
     }
 
     async function wczytaj() {
       const lista = document.getElementById("lista");
-      lista.innerHTML = "<p>Ładowanie danych...</p>";
-
-      try {
-        const snap = await db.collection("godziny")
-          .where("login", "==", login)
-          .orderBy("data", "asc")
-          .get();
-
-        if (snap.empty) {
-          lista.innerHTML = "<p>Brak wpisów.</p>";
-          return;
+      lista.innerHTML = "Ładowanie...";
+      const snap = await db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get();
+      zapisaneDane = [];
+      lista.innerHTML = "";
+      snap.forEach(doc => {
+        const g = doc.data();
+        zapisaneDane.push(g);
+        const div = document.createElement("div");
+        div.className = "entry";
+        if (g.status === "urlop") {
+          div.innerText = `${g.data}: [URLOP]`;
+        } else {
+          div.innerText = `${g.data}: ${g.start} – ${g.end} (${formatujGodziny(g.godziny)})`;
         }
-
-        zapisaneDane = [];
-        lista.innerHTML = "";
-
-        snap.forEach(doc => {
-          const g = doc.data();
-          zapisaneDane.push(g);
-
-          const el = document.createElement("div");
-          el.className = "entry";
-          el.innerText = `${g.data}: ${g.start} – ${g.end} (${formatujGodziny(g.godziny)})`;
-          lista.appendChild(el);
-        });
-      } catch (err) {
-        console.error("Błąd wczytywania:", err);
-        lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
-      }
+        lista.appendChild(div);
+      });
+      if (!zapisaneDane.length) lista.innerHTML = "<p>Brak wpisów.</p>";
     }
 
     function eksportuj() {
-      if (!zapisaneDane.length) return alert("Brak danych do eksportu.");
-
+      if (!zapisaneDane.length) return alert("Brak danych.");
       const dane = zapisaneDane.map(row => ({
         Data: row.data,
-        Start: row.start,
-        Koniec: row.end,
-        Godziny: row.godziny
+        Start: row.start || "-",
+        Koniec: row.end || "-",
+        Godziny: row.status === "urlop" ? "URLOP" : row.godziny
       }));
-
       const ws = XLSX.utils.json_to_sheet(dane);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
@@ -249,38 +243,26 @@
     }
 
     function drukuj() {
-      const printWindow = window.open('', '', 'height=600,width=800');
-      printWindow.document.write('<html><head><title>Drukuj godziny</title>');
-      printWindow.document.write(`
-        <style>
-          body { font-family: 'Roboto', sans-serif; padding: 20px; background: #fff; color: #000; }
-          h2 { text-align: center; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-          th { background-color: #f2f2f2; }
-        </style>
-      `);
-      printWindow.document.write('</head><body>');
-      printWindow.document.write('<h2>Lista obecności za miesiąc ..............</h2>');
-      printWindow.document.write('<table>');
-      printWindow.document.write('<tr><th>Data</th><th>Godzina przyjścia</th><th>Godzina wyjścia</th><th>Godziny</th><th>Podpis</th></tr>');
-
+      const win = window.open('', '', 'width=800,height=600');
+      win.document.write('<html><head><title>Drukuj</title><style>body{font-family:Arial}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:8px;text-align:center}</style></head><body>');
+      win.document.write('<h2>Lista obecności</h2><table><tr><th>Data</th><th>Początek</th><th>Koniec</th><th>Godziny</th><th>Podpis</th></tr>');
       zapisaneDane.forEach(row => {
-        const sformatowaneGodziny = formatujGodziny(row.godziny);
-        printWindow.document.write(`
-          <tr>
-            <td>${row.data}</td>
-            <td>${row.start}</td>
-            <td>${row.end}</td>
-            <td>${sformatowaneGodziny}</td>
-            <td style="height: 40px;"></td>
-          </tr>
-        `);
+        win.document.write(`<tr>
+          <td>${row.data}</td>
+          <td>${row.start || "-"}</td>
+          <td>${row.end || "-"}</td>
+          <td>${row.status === "urlop" ? "URLOP" : formatujGodziny(row.godziny)}</td>
+          <td></td>
+        </tr>`);
       });
+      win.document.write('</table></body></html>');
+      win.document.close();
+      win.print();
+    }
 
-      printWindow.document.write('</table></body></html>');
-      printWindow.document.close();
-      printWindow.print();
+    function switchTab(tab) {
+      document.getElementById("godzinyForm").classList.toggle("hidden", tab !== "godziny");
+      document.getElementById("urlopForm").classList.toggle("hidden", tab !== "urlop");
     }
   </script>
 </body>
