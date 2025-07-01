@@ -18,8 +18,33 @@
     h1 {
       text-align: center;
       font-size: 28px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       color: #2c3e50;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .tabs button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: none;
+      cursor: pointer;
+    }
+    .tabs button.active {
+      border-color: #007bff;
+      color: #007bff;
+    }
+    .panel {
+      display: none;
+    }
+    .panel.active {
+      display: block;
     }
     input, select, button {
       margin: 5px;
@@ -46,161 +71,85 @@
     }
     table {
       width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background-color: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       border-radius: 8px;
       overflow: hidden;
-      margin-top: 30px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background-color: white;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #e0e6ed;
+      text-align: center;
+      font-size: 14px;
     }
     th {
       background-color: #f5f7fa;
-      padding: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      font-size: 13px;
-    }
-    td {
-      padding: 10px;
-      border-top: 1px solid #e0e6ed;
-      text-align: center;
-      font-size: 14px;
-    }
-    td[contenteditable] {
-      background-color: #f9fcff;
-    }
-    .status-green {
-      background-color: #e0f4e6;
-      color: #2e7d32;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-red {
-      background-color: #fbeaea;
-      color: #c0392b;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-yellow {
-      background-color: #fff7e0;
-      color: #b8860b;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      margin: 0;
-      padding: 40px 20px;
-      background: linear-gradient(to right, #e9eff5, #fdfdfd);
-      color: #333;
-    }
-    h1 {
-      text-align: center;
-      font-size: 28px;
-      margin-bottom: 30px;
-      color: #2c3e50;
-    }
-    input, select, button {
-      margin: 5px;
-      padding: 10px 12px;
-      font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-    input:focus, select:focus {
-      border-color: #007bff;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 30px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background-color: white;
-    }
-    th {
-      background-color: #f5f7fa;
-      padding: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      font-size: 13px;
-    }
-    td {
-      padding: 10px;
-      border-top: 1px solid #e0e6ed;
-      text-align: center;
-      font-size: 14px;
-    }
-    td[contenteditable] {
-      background-color: #f9fcff;
-    }
-    .status-green {
-      background-color: #e0f4e6;
-      color: #2e7d32;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-red {
-      background-color: #fbeaea;
-      color: #c0392b;
-      font-weight: 600;
-      border-radius: 4px;
-    }
-    .status-yellow {
-      background-color: #fff7e0;
-      color: #b8860b;
-      font-weight: 600;
-      border-radius: 4px;
     }
   </style>
 </head>
 <body>
   <h1>Panel Admina</h1>
-
-  <div>
-    <label>Pracownik:</label>
-    <select id="filterLogin">
-      <option value="">-- Wszyscy --</option>
-    </select>
-
-    <label>Data:</label>
-    <input type="date" id="filterDate">
-
-    <button onclick="filtruj()">Filtruj</button>
-    <button id="exportBtn">Eksportuj do Excela</button>
+  <div class="tabs">
+    <button id="tabGodziny" class="active" onclick="pokazPanel('godziny')">Godziny</button>
+    <button id="tabUrlopy" onclick="pokazPanel('urlopy')">Urlopy</button>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Pracownik</th>
-        <th>Data</th>
-        <th>Start</th>
-        <th>Koniec</th>
-        <th>Godziny</th>
-        <th>Status</th>
-        <th>Usuń</th>
-      </tr>
-    </thead>
-    <tbody id="tabela"></tbody>
-    <tfoot id="stopka"></tfoot>
-  </table>
+  <!-- Panel Godziny -->
+  <div id="panelGodziny" class="panel active">
+    <div>
+      <label>Pracownik:</label>
+      <select id="filterLogin">
+        <option value="">-- Wszyscy --</option>
+      </select>
+      <label>Data:</label>
+      <input type="date" id="filterDate">
+      <button onclick="filtruj()">Filtruj</button>
+      <button id="exportBtn">Eksportuj do Excela</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Pracownik</th>
+          <th>Data</th>
+          <th>Start</th>
+          <th>Koniec</th>
+          <th>Godziny</th>
+          <th>Status</th>
+          <th>Usuń</th>
+        </tr>
+      </thead>
+      <tbody id="tabela"></tbody>
+      <tfoot id="stopka"></tfoot>
+    </table>
+  </div>
+
+  <!-- Panel Urlopy -->
+  <div id="panelUrlopy" class="panel">
+    <div>
+      <label>Pracownik:</label>
+      <select id="filterLoginUrlopy">
+        <option value="">-- Wszyscy --</option>
+      </select>
+      <label>Data:</label>
+      <input type="date" id="filterDateUrlopy">
+      <button onclick="filtrujUrlopy()">Filtruj</button>
+      <button id="exportBtnUrlopy">Eksportuj do Excela</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Pracownik</th>
+          <th>Data</th>
+          <th>Rodzaj</th>
+        </tr>
+      </thead>
+      <tbody id="tabelaUrlopy"></tbody>
+    </table>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -214,34 +163,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const tabela = document.getElementById("tabela");
-    const stopka = document.getElementById("stopka");
-    const exportBtn = document.getElementById("exportBtn");
-
     let daneWidoczne = [];
     let mapaUzytkownikow = {};
-
-    const login10h = [
-      "a.krzon@naszprad.com", "e.labaz@naszprad.com",
-      "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
-    ];
-
-    function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-      return diff > 0 ? diff.toFixed(2) : "0.00";
-    }
-
-    function getNorma(login) {
-      return login10h.includes(login.toLowerCase()) ? 10 : 8;
-    }
-
-    function formatujGodzinyDziesietne(decimalHours) {
-      const godziny = Math.floor(decimalHours);
-      const minuty = Math.round((decimalHours - godziny) * 60);
-      return `${godziny}h ${minuty}min`;
-    }
+    const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
 
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
@@ -254,25 +178,52 @@
         }
       });
 
-      const select = document.getElementById("filterLogin");
+      const select1 = document.getElementById("filterLogin");
+      const select2 = document.getElementById("filterLoginUrlopy");
       Object.entries(mapaUzytkownikow).forEach(([email, name]) => {
-        const option = document.createElement("option");
-        option.value = email;
-        option.textContent = name;
-        select.appendChild(option);
+        const option1 = document.createElement("option");
+        option1.value = email;
+        option1.textContent = name;
+        select1.appendChild(option1);
+
+        const option2 = document.createElement("option");
+        option2.value = email;
+        option2.textContent = name;
+        select2.appendChild(option2);
       });
 
       const snap = await db.collection("godziny").get();
       daneWidoczne = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
       renderujTabele(daneWidoczne);
+
+      const snapUrlopy = await db.collection("urlopy").get();
+      daneUrlopy = snapUrlopy.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderujUrlopy(daneUrlopy);
     });
 
+    function obliczGodziny(start, end) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      return (((eh * 60 + em) - (sh * 60 + sm)) / 60).toFixed(2);
+    }
+
+    function getNorma(login) {
+      return login10h.includes(login.toLowerCase()) ? 10 : 8;
+    }
+
+    function formatujGodzinyDziesietne(decimalHours) {
+      const godziny = Math.floor(decimalHours);
+      const minuty = Math.round((decimalHours - godziny) * 60);
+      return `${godziny}h ${minuty}min`;
+    }
+
     function renderujTabele(dane) {
+      const tabela = document.getElementById("tabela");
+      const stopka = document.getElementById("stopka");
       tabela.innerHTML = "";
       stopka.innerHTML = "";
-      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
 
+      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
       dane.forEach(row => {
         const tr = document.createElement("tr");
         const pracownik = mapaUzytkownikow[row.login] || row.login;
@@ -281,7 +232,7 @@
           tr.innerHTML = `
             <td>${pracownik}</td>
             <td>${row.data}</td>
-            <td colspan="4" style="font-weight:bold; text-align:center; text-transform:uppercase; color:#444;">${row.typ}</td>
+            <td colspan="4">${row.typ}</td>
             <td><button onclick="usun('${row.id}')">🗑️</button></td>
           `;
           tabela.appendChild(tr);
@@ -291,9 +242,6 @@
         const norma = getNorma(row.login);
         const godz = parseFloat(row.godziny);
         const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
-        const kolor = status === "zaakceptowane" ? "status-green" :
-                      status === "odrzucone" ? "status-red" : "status-yellow";
-
         const pokazGodziny = (godz > norma && status === "odrzucone")
           ? formatujGodzinyDziesietne(norma)
           : formatujGodzinyDziesietne(godz);
@@ -304,18 +252,16 @@
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${pokazGodziny}</td>
-          <td class="${kolor}">${status}</td>
+          <td>${status}</td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
         `;
         tabela.appendChild(tr);
       });
 
       const suma = dane.reduce((sum, r) => {
-        if (r.typ) return sum; // pomiń dni urlopowe
+        if (r.typ) return sum;
         let godz = parseFloat(r.godziny) || 0;
-        if (r.status === "odrzucone" && godz > getNorma(r.login)) {
-          godz = getNorma(r.login);
-        }
+        if (r.status === "odrzucone" && godz > getNorma(r.login)) godz = getNorma(r.login);
         return sum + godz;
       }, 0).toFixed(2);
 
@@ -328,27 +274,26 @@
       `;
     }
 
-    async function zapisz(id, pole, wartosc) {
-      if (!/^\d{2}:\d{2}$/.test(wartosc)) {
-        alert("Nieprawidłowy format godziny (HH:MM)");
-        return location.reload();
-      }
-      const ref = db.collection("godziny").doc(id);
-      const doc = await ref.get();
-      const data = doc.data();
-      data[pole] = wartosc;
-      if (data.start && data.end) {
-        data.godziny = obliczGodziny(data.start, data.end);
-      }
-      await ref.set(data);
-      location.reload();
+    function renderujUrlopy(dane) {
+      const tbody = document.getElementById("tabelaUrlopy");
+      tbody.innerHTML = "";
+      dane.forEach(row => {
+        const tr = document.createElement("tr");
+        const pracownik = mapaUzytkownikow[row.login] || row.login;
+        tr.innerHTML = `
+          <td>${pracownik}</td>
+          <td>${row.data}</td>
+          <td>${row.rodzaj || "Urlop"}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
-    async function usun(id) {
-      if (confirm("Czy na pewno usunąć?")) {
-        await db.collection("godziny").doc(id).delete();
-        location.reload();
-      }
+    function pokazPanel(nazwa) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tabs button").forEach(b => b.classList.remove("active"));
+      document.getElementById("panel" + nazwa.charAt(0).toUpperCase() + nazwa.slice(1)).classList.add("active");
+      document.getElementById("tab" + nazwa.charAt(0).toUpperCase() + nazwa.slice(1)).classList.add("active");
     }
 
     function filtruj() {
@@ -361,38 +306,64 @@
       renderujTabele(wynik);
     }
 
-    exportBtn.addEventListener("click", () => {
-      const wb = XLSX.utils.book_new();
-      const daneDoXLSX = daneWidoczne.map(r => {
-        if (r.typ) {
-          return {
-            Pracownik: mapaUzytkownikow[r.login] || r.login,
-            Data: r.data,
-            Start: r.typ,
-            Koniec: r.typ,
-            Godziny: r.typ,
-            Status: r.typ
-          };
-        }
+    function filtrujUrlopy() {
+      const log = document.getElementById("filterLoginUrlopy").value;
+      const dat = document.getElementById("filterDateUrlopy").value;
+      const wynik = daneUrlopy.filter(r =>
+        (log === "" || r.login === log) &&
+        (dat === "" || r.data === dat)
+      );
+      renderujUrlopy(wynik);
+    }
 
-        const norma = getNorma(r.login);
-        let godz = parseFloat(r.godziny) || 0;
-        if (r.status === "odrzucone" && godz > norma) {
-          godz = norma;
-        }
-        return {
-          Pracownik: mapaUzytkownikow[r.login] || r.login,
-          Data: r.data,
-          Start: r.start,
-          Koniec: r.end,
-          Godziny: formatujGodzinyDziesietne(godz),
-          Status: r.status || "zaakceptowane"
-        };
-      });
+    async function zapisz(id, pole, wartosc) {
+      if (!/^\d{2}:\d{2}$/.test(wartosc)) return alert("Zły format (HH:MM)");
+      const ref = db.collection("godziny").doc(id);
+      const doc = await ref.get();
+      const data = doc.data();
+      data[pole] = wartosc;
+      if (data.start && data.end) {
+        data.godziny = obliczGodziny(data.start, data.end);
+      }
+      await ref.set(data);
+      location.reload();
+    }
+
+    async function usun(id) {
+      if (confirm("Usunąć wpis?")) {
+        await db.collection("godziny").doc(id).delete();
+        location.reload();
+      }
+    }
+
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const daneDoXLSX = daneWidoczne.map(r => ({
+        Pracownik: mapaUzytkownikow[r.login] || r.login,
+        Data: r.data,
+        Start: r.start || r.typ,
+        Koniec: r.end || r.typ,
+        Godziny: formatujGodzinyDziesietne(parseFloat(r.godziny || 0)),
+        Status: r.status || "zaakceptowane"
+      }));
       const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
+      const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
       XLSX.writeFile(wb, "godziny_admin.xlsx");
     });
+
+    document.getElementById("exportBtnUrlopy").addEventListener("click", () => {
+      const daneDoXLSX = daneUrlopy.map(r => ({
+        Pracownik: mapaUzytkownikow[r.login] || r.login,
+        Data: r.data,
+        Rodzaj: r.rodzaj || "Urlop"
+      }));
+      const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Urlopy");
+      XLSX.writeFile(wb, "urlopy_admin.xlsx");
+    });
+
+    let daneUrlopy = [];
   </script>
 </body>
 </html>
