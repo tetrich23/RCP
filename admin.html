@@ -2,29 +2,96 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel Administratora</title>
+  <title>Panel Admina</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 40px 20px; background: linear-gradient(to right, #e9eff5, #fdfdfd); color: #333; }
-    h1 { text-align: center; font-size: 28px; margin-bottom: 30px; color: #2c3e50; }
-    input, select, button { margin: 5px; padding: 10px 12px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; outline: none; transition: border-color 0.3s; }
-    input:focus, select:focus { border-color: #007bff; }
-    button { background-color: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
-    button:hover { background-color: #0056b3; }
-    table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; margin-top: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); background-color: white; }
-    th { background-color: #f5f7fa; padding: 12px; font-weight: 600; text-transform: uppercase; font-size: 13px; }
-    td { padding: 10px; border-top: 1px solid #e0e6ed; text-align: center; font-size: 14px; }
-    td[contenteditable] { background-color: #f9fcff; }
-    .status-green { background-color: #e0f4e6; color: #2e7d32; font-weight: 600; border-radius: 4px; }
-    .status-red { background-color: #fbeaea; color: #c0392b; font-weight: 600; border-radius: 4px; }
-    .status-yellow { background-color: #fff7e0; color: #b8860b; font-weight: 600; border-radius: 4px; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: linear-gradient(to right, #e9eff5, #fdfdfd);
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+    input, select, button {
+      margin: 5px;
+      padding: 10px 12px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      background-color: white;
+    }
+    th {
+      background-color: #f5f7fa;
+      padding: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 13px;
+    }
+    td {
+      padding: 10px;
+      border-top: 1px solid #e0e6ed;
+      text-align: center;
+      font-size: 14px;
+    }
+    td[contenteditable] {
+      background-color: #f9fcff;
+    }
+    .status-green {
+      background-color: #e0f4e6;
+      color: #2e7d32;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-red {
+      background-color: #fbeaea;
+      color: #c0392b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
+    .status-yellow {
+      background-color: #fff7e0;
+      color: #b8860b;
+      font-weight: 600;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <h1>Panel Administratora</h1>
+  <h1>Panel Admina</h1>
 
   <div>
     <label>Pracownik:</label>
@@ -74,7 +141,11 @@
 
     let daneWidoczne = [];
     let mapaUzytkownikow = {};
-    const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
+
+    const login10h = [
+      "a.krzon@naszprad.com", "e.labaz@naszprad.com",
+      "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
+    ];
 
     function obliczGodziny(start, end) {
       const [sh, sm] = start.split(":").map(Number);
@@ -96,7 +167,11 @@
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
 
-      // Administrator ma pełen dostęp:
+      const doc = await db.collection("users").doc(user.email).get();
+      const data = doc.data();
+      if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
+
+      const podwladni = data.podwladni;
       const snapUzytkownicy = await db.collection("uzytkownicy").get();
       snapUzytkownicy.forEach(d => {
         const u = d.data();
@@ -106,15 +181,18 @@
       });
 
       const select = document.getElementById("filterLogin");
-      Object.entries(mapaUzytkownikow).forEach(([email, nazwa]) => {
+      podwladni.forEach(email => {
         const option = document.createElement("option");
         option.value = email;
-        option.textContent = nazwa;
+        option.textContent = mapaUzytkownikow[email] || email;
         select.appendChild(option);
       });
 
       const snap = await db.collection("godziny").get();
-      daneWidoczne = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      daneWidoczne = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(r => podwladni.includes(r.login));
+
       renderujTabele(daneWidoczne);
     });
 
@@ -142,12 +220,7 @@
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
-          <td>
-            ${godz > norma && status !== "zaakceptowane" ? `
-              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-            ` : ""}
-          </td>
+          <td></td>
           <td><button onclick="usun('${row.id}')">🗑️</button></td>
         `;
         tabela.appendChild(tr);
@@ -183,23 +256,6 @@
         data.godziny = obliczGodziny(data.start, data.end);
       }
       await ref.set(data);
-      location.reload();
-    }
-
-    async function zatwierdz(id) {
-      await db.collection("godziny").doc(id).update({ status: "zaakceptowane" });
-      location.reload();
-    }
-
-    async function odrzuc(id) {
-      const doc = await db.collection("godziny").doc(id).get();
-      const data = doc.data();
-      const norma = getNorma(data.login);
-      data.status = "odrzucone";
-      if (parseFloat(data.godziny) > norma) {
-        data.godziny = norma.toFixed(2);
-      }
-      await db.collection("godziny").doc(id).set(data);
       location.reload();
     }
 
