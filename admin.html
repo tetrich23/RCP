@@ -67,9 +67,6 @@
       text-align: center;
       font-size: 14px;
     }
-    td[contenteditable] {
-      background-color: #f9fcff;
-    }
     .status-green {
       background-color: #e0f4e6;
       color: #2e7d32;
@@ -115,7 +112,6 @@
         <th>Koniec</th>
         <th>Godziny</th>
         <th>Status</th>
-        <th>Akcja</th>
         <th>Usuń</th>
       </tr>
     </thead>
@@ -147,13 +143,6 @@
       "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
     ];
 
-    function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-      return diff > 0 ? diff.toFixed(2) : "0.00";
-    }
-
     function getNorma(login) {
       return login10h.includes(login.toLowerCase()) ? 10 : 8;
     }
@@ -169,11 +158,7 @@
 
       const doc = await db.collection("users").doc(user.email).get();
       const data = doc.data();
-      const rola = data?.rola;
-
-      if (!rola || (Array.isArray(rola) ? !rola.includes("admin") : rola !== "admin") && !data.podwladni) {
-        return location.href = "index.html";
-      }
+      if (!data || !data.rola) return location.href = "index.html";
 
       let podwladni = [];
 
@@ -185,10 +170,12 @@
         }
       });
 
-      if ((Array.isArray(rola) ? rola.includes("admin") : rola === "admin")) {
+      if (data.rola.toLowerCase() === "admin") {
         podwladni = Object.keys(mapaUzytkownikow);
-      } else {
+      } else if (Array.isArray(data.podwladni)) {
         podwladni = data.podwladni;
+      } else {
+        return location.href = "index.html";
       }
 
       const select = document.getElementById("filterLogin");
@@ -231,8 +218,7 @@
           <td>${row.end}</td>
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
-          <td></td>
-          <td></td>
+          <td><button onclick="usunRekord('${row.id}')">Usuń</button></td>
         `;
         tabela.appendChild(tr);
       });
@@ -249,7 +235,7 @@
         <tr>
           <td colspan="4"><strong>Razem</strong></td>
           <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
-          <td colspan="3"></td>
+          <td colspan="2"></td>
         </tr>
       `;
     }
@@ -262,6 +248,16 @@
         (dat === "" || r.data === dat)
       );
       renderujTabele(wynik);
+    }
+
+    function usunRekord(id) {
+      if (!confirm("Czy na pewno chcesz usunąć ten wpis?")) return;
+      db.collection("godziny").doc(id).delete().then(() => {
+        daneWidoczne = daneWidoczne.filter(r => r.id !== id);
+        renderujTabele(daneWidoczne);
+      }).catch(err => {
+        alert("Błąd podczas usuwania: " + err.message);
+      });
     }
 
     exportBtn.addEventListener("click", () => {
