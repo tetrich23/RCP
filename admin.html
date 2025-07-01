@@ -148,8 +148,8 @@
     ];
 
     function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
+      const [sh, sm] = start.split(":".map(Number));
+      const [eh, em] = end.split(":".map(Number));
       const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
       return diff > 0 ? diff.toFixed(2) : "0.00";
     }
@@ -169,9 +169,11 @@
 
       const doc = await db.collection("users").doc(user.email).get();
       const data = doc.data();
-      if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
+      if (!data || !data.rola) return location.href = "index.html";
 
-      const podwladni = data.podwladni;
+      const rola = data.rola;
+      let podwladni = [];
+
       const snapUzytkownicy = await db.collection("uzytkownicy").get();
       snapUzytkownicy.forEach(d => {
         const u = d.data();
@@ -179,6 +181,14 @@
           mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
         }
       });
+
+      if (rola === "admin") {
+        podwladni = Object.keys(mapaUzytkownikow);
+      } else if (data.podwladni) {
+        podwladni = data.podwladni;
+      } else {
+        return location.href = "index.html";
+      }
 
       const select = document.getElementById("filterLogin");
       podwladni.forEach(email => {
@@ -216,12 +226,12 @@
         tr.innerHTML = `
           <td>${mapaUzytkownikow[row.login] || row.login}</td>
           <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
+          <td>${row.start}</td>
+          <td>${row.end}</td>
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
           <td></td>
-          <td><button onclick="usun('${row.id}')">🗑️</button></td>
+          <td></td>
         `;
         tabela.appendChild(tr);
       });
@@ -241,29 +251,6 @@
           <td colspan="3"></td>
         </tr>
       `;
-    }
-
-    async function zapisz(id, pole, wartosc) {
-      if (!/^\d{2}:\d{2}$/.test(wartosc)) {
-        alert("Nieprawidłowy format godziny (HH:MM)");
-        return location.reload();
-      }
-      const ref = db.collection("godziny").doc(id);
-      const doc = await ref.get();
-      const data = doc.data();
-      data[pole] = wartosc;
-      if (data.start && data.end) {
-        data.godziny = obliczGodziny(data.start, data.end);
-      }
-      await ref.set(data);
-      location.reload();
-    }
-
-    async function usun(id) {
-      if (confirm("Czy na pewno usunąć?")) {
-        await db.collection("godziny").doc(id).delete();
-        location.reload();
-      }
     }
 
     function filtruj() {
