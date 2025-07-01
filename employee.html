@@ -94,6 +94,31 @@
       color: #888;
       margin-bottom: 20px;
     }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    .tab-button {
+      flex: 1;
+      padding: 10px;
+      background-color: #00bfa6;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    .tab-button.active {
+      background-color: #00a893;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -101,50 +126,54 @@
     <h2>Panel Pracownika</h2>
     <p id="loginDisplay">Sprawdzanie sesji...</p>
 
-    <label for="data">Data:</label>
-    <input type="date" id="data">
+    <div class="tabs">
+      <button class="tab-button active" onclick="openTab('godzinyTab', this)">Godziny</button>
+      <button class="tab-button" onclick="openTab('urlopTab', this)">Urlop</button>
+    </div>
 
-    <label for="start">Godzina przyjścia:</label>
-    <input type="time" id="start">
+    <div id="godzinyTab" class="tab-content active">
+      <label for="data">Data:</label>
+      <input type="date" id="data">
 
-    <label for="end">Godzina wyjścia:</label>
-    <input type="time" id="end">
+      <label for="start">Godzina przyjścia:</label>
+      <input type="time" id="start">
 
-    <button onclick="zapiszGodziny()">Zapisz godziny</button>
+      <label for="end">Godzina wyjścia:</label>
+      <input type="time" id="end">
 
-    <hr>
+      <button onclick="zapiszGodziny()">Zapisz godziny</button>
+    </div>
 
-    <label for="urlopOd">Urlop od:</label>
-    <input type="date" id="urlopOd">
+    <div id="urlopTab" class="tab-content">
+      <label for="urlopOd">Urlop od:</label>
+      <input type="date" id="urlopOd">
 
-    <label for="urlopDo">Urlop do:</label>
-    <input type="date" id="urlopDo">
+      <label for="urlopDo">Urlop do:</label>
+      <input type="date" id="urlopDo">
 
-    <label for="typUrlopu">Typ urlopu:</label>
-    <select id="typUrlopu">
-      <option>Urlop wypoczynkowy</option>
-      <option>Urlop na żądanie</option>
-      <option>Urlop okolicznościowy</option>
-      <option>Urlop macierzyński</option>
-      <option>Urlop ojcowski</option>
-      <option>Urlop rodzicielski</option>
-      <option>Urlop wychowawczy</option>
-      <option>Urlop opiekuńczy / opieka nad dzieckiem</option>
-      <option>Zwolnienie z powodu siły wyższej</option>
-      <option>Urlop szkoleniowy</option>
-      <option>Dzień wolny za honorowe oddawanie krwi</option>
-      <option>Urlop bezpłatny</option>
-      <option>Zwolnienie lekarskie (L4)</option>
-      <option>Urlop na ślub pracownika</option>
-      <option>Urlop na ślub dziecka</option>
-      <option>Urlop wojskowy</option>
-      <option>Urlop na cele adopcyjne</option>
-    </select>
+      <label for="typUrlopu">Typ urlopu:</label>
+      <select id="typUrlopu">
+        <option>Urlop wypoczynkowy</option>
+        <option>Urlop na żądanie</option>
+        <option>Urlop okolicznościowy</option>
+        <option>Urlop macierzyński</option>
+        <option>Urlop ojcowski</option>
+        <option>Urlop rodzicielski</option>
+        <option>Urlop wychowawczy</option>
+        <option>Urlop opiekuńczy / opieka nad dzieckiem</option>
+        <option>Zwolnienie z powodu siły wyższej</option>
+        <option>Urlop szkoleniowy</option>
+        <option>Dzień wolny za honorowe oddawanie krwi</option>
+        <option>Urlop bezpłatny</option>
+        <option>Zwolnienie lekarskie (L4)</option>
+        <option>Urlop na ślub pracownika</option>
+        <option>Urlop na ślub dziecka</option>
+        <option>Urlop wojskowy</option>
+        <option>Urlop na cele adopcyjne</option>
+      </select>
 
-    <button onclick="zapiszUrlop()">Zapisz urlop</button>
-
-    <button onclick="eksportuj()">Eksportuj do Excela</button>
-    <button onclick="drukuj()">Drukuj</button>
+      <button onclick="zapiszUrlop()">Zapisz urlop</button>
+    </div>
 
     <div id="lista"><p>Brak danych.</p></div>
   </div>
@@ -170,6 +199,13 @@
         window.location.href = "login.html";
       }
     });
+
+    function openTab(tabId, button) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      button.classList.add('active');
+    }
 
     async function zapiszUrlop() {
       const od = document.getElementById("urlopOd").value;
@@ -202,14 +238,6 @@
         console.error("Błąd zapisu godzin:", err);
         alert("Błąd zapisu godzin");
       }
-    }
-
-    function eksportuj() {
-      alert("Funkcja eksportu jeszcze niezaimplementowana.");
-    }
-
-    function drukuj() {
-      alert("Funkcja drukowania jeszcze niezaimplementowana.");
     }
   </script>
 </body>
