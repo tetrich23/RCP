@@ -88,18 +88,13 @@
       font-weight: 600;
       border-radius: 4px;
     }
-    .actions button {
-      margin: 2px;
-      padding: 6px 10px;
-      font-size: 13px;
-    }
   </style>
 </head>
 <body>
   <h1>Panel Dyrektora</h1>
 
   <div>
-    <label>Login:</label>
+    <label>Pracownik:</label>
     <select id="filterLogin">
       <option value="">-- Wszyscy --</option>
     </select>
@@ -114,7 +109,7 @@
   <table>
     <thead>
       <tr>
-        <th>Login</th>
+        <th>Pracownik</th>
         <th>Data</th>
         <th>Start</th>
         <th>Koniec</th>
@@ -143,13 +138,13 @@
     const tabela = document.getElementById("tabela");
     const stopka = document.getElementById("stopka");
     const exportBtn = document.getElementById("exportBtn");
+
     let daneWidoczne = [];
+    let mapaUzytkownikow = {}; // email => "Imię Nazwisko"
 
     const login10h = [
-      "a.krzon@naszprad.com",
-      "e.labaz@naszprad.com",
-      "n.gmitruk@naszprad.com",
-      "p.haczkiewicz@naszprad.com"
+      "a.krzon@naszprad.com", "e.labaz@naszprad.com",
+      "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
     ];
 
     function obliczGodziny(start, end) {
@@ -171,24 +166,31 @@
 
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
+
       const doc = await db.collection("users").doc(user.email).get();
       const data = doc.data();
-      if (!data || !data.rola) return location.href = "index.html";
-      let rola = Array.isArray(data.rola) ? data.rola : [data.rola];
-      rola = rola.map(r => r.trim().toLowerCase());
-      if (!rola.includes("dyrektor")) return location.href = "index.html";
+      if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
 
-      const podwladni = data.podwladni || [];
+      const podwladni = data.podwladni;
+      const snapUzytkownicy = await db.collection("users").get();
+      snapUzytkownicy.forEach(d => {
+        const u = d.data();
+        if (u.imie && u.nazwisko) {
+          mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
+        }
+      });
+
       const select = document.getElementById("filterLogin");
-      podwladni.forEach(login => {
-        const opt = document.createElement("option");
-        opt.value = login;
-        opt.textContent = login;
-        select.appendChild(opt);
+      podwladni.forEach(email => {
+        const option = document.createElement("option");
+        option.value = email;
+        option.textContent = mapaUzytkownikow[email] || email;
+        select.appendChild(option);
       });
 
       const snap = await db.collection("godziny").get();
-      daneWidoczne = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+      daneWidoczne = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
         .filter(r => podwladni.includes(r.login));
 
       renderujTabele(daneWidoczne);
@@ -203,9 +205,8 @@
         const norma = getNorma(row.login);
         const godz = parseFloat(row.godziny);
         const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
-        const kolor = status === "zaakceptowane" ? "status-green"
-                      : status === "odrzucone" ? "status-red"
-                      : "status-yellow";
+        const kolor = status === "zaakceptowane" ? "status-green" :
+                      status === "odrzucone" ? "status-red" : "status-yellow";
 
         const pokazGodziny = (godz > norma && status === "odrzucone")
           ? formatujGodzinyDziesietne(norma)
@@ -213,7 +214,7 @@
 
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${row.login}</td>
+          <td>${mapaUzytkownikow[row.login] || row.login}</td>
           <td>${row.data}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
           <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
@@ -288,10 +289,10 @@
     }
 
     function filtruj() {
-      const log = document.getElementById("filterLogin").value.trim().toLowerCase();
+      const log = document.getElementById("filterLogin").value;
       const dat = document.getElementById("filterDate").value;
       const wynik = daneWidoczne.filter(r =>
-        (log === "" || r.login.toLowerCase().includes(log)) &&
+        (log === "" || r.login === log) &&
         (dat === "" || r.data === dat)
       );
       renderujTabele(wynik);
@@ -306,7 +307,7 @@
           godz = norma;
         }
         return {
-          Login: r.login,
+          Pracownik: mapaUzytkownikow[r.login] || r.login,
           Data: r.data,
           Start: r.start,
           Koniec: r.end,
