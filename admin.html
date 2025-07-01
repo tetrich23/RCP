@@ -62,6 +62,7 @@
       display: flex;
       justify-content: space-around;
       margin-bottom: 20px;
+      flex-wrap: wrap;
     }
     .zakladka {
       cursor: pointer;
@@ -75,7 +76,7 @@
     #formGodziny, #formUrlopy {
       display: none;
     }
-    #lista {
+    #lista, #listaWszystkichUrlopow {
       margin-top: 20px;
       max-height: 200px;
       overflow-y: auto;
@@ -95,6 +96,7 @@
     <div id="zakladki">
       <div id="tabGodziny" class="zakladka active" onclick="switchTab('godziny')">Godziny</div>
       <div id="tabUrlopy" class="zakladka" onclick="switchTab('urlopy')">Urlop</div>
+      <div id="tabWszystkieUrlopy" class="zakladka" onclick="switchTab('wszystkieUrlopy')">Wszystkie urlopy</div>
     </div>
 
     <div id="formGodziny">
@@ -143,6 +145,7 @@
     </div>
 
     <div id="lista"><p>Brak danych.</p></div>
+    <div id="listaWszystkichUrlopow" style="display: none;"><p>Brak danych.</p></div>
   </div>
 
   <script>
@@ -171,20 +174,26 @@
 
     function switchTab(tab) {
       aktywnaZakladka = tab;
-      document.getElementById("tabGodziny").classList.remove("active");
-      document.getElementById("tabUrlopy").classList.remove("active");
+      document.querySelectorAll('.zakladka').forEach(z => z.classList.remove("active"));
       document.getElementById("formGodziny").style.display = "none";
       document.getElementById("formUrlopy").style.display = "none";
-      document.getElementById("lista").innerHTML = "";
+      document.getElementById("lista").style.display = "none";
+      document.getElementById("listaWszystkichUrlopow").style.display = "none";
 
       if (tab === "godziny") {
         document.getElementById("tabGodziny").classList.add("active");
         document.getElementById("formGodziny").style.display = "block";
+        document.getElementById("lista").style.display = "block";
         wczytajGodziny();
-      } else {
+      } else if (tab === "urlopy") {
         document.getElementById("tabUrlopy").classList.add("active");
         document.getElementById("formUrlopy").style.display = "block";
+        document.getElementById("lista").style.display = "block";
         wczytajUrlopy();
+      } else if (tab === "wszystkieUrlopy") {
+        document.getElementById("tabWszystkieUrlopy").classList.add("active");
+        document.getElementById("listaWszystkichUrlopow").style.display = "block";
+        wczytajWszystkieUrlopy();
       }
     }
 
@@ -233,6 +242,26 @@
         const div = document.createElement("div");
         div.className = "entry";
         div.innerText = `${u.start} do ${u.end}: ${u.typ}`;
+        lista.appendChild(div);
+      });
+    }
+
+    async function wczytajWszystkieUrlopy() {
+      const lista = document.getElementById("listaWszystkichUrlopow");
+      lista.innerHTML = "<p>Ładowanie danych...</p>";
+      const snap = await db.collection("urlopy").orderBy("start", "desc").get();
+
+      if (snap.empty) {
+        lista.innerHTML = "<p>Brak zgłoszonych urlopów.</p>";
+        return;
+      }
+
+      lista.innerHTML = "";
+      snap.forEach(doc => {
+        const u = doc.data();
+        const div = document.createElement("div");
+        div.className = "entry";
+        div.innerText = `${u.login} | ${u.start} → ${u.end} (${u.typ})`;
         lista.appendChild(div);
       });
     }
