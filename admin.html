@@ -203,11 +203,17 @@
         };
       });
 
+      // Jeżeli któryś z wpisów to urlop, wymuśmy spójne wartości
+      wszystkie.forEach(d => {
+        if (d.start.toLowerCase() === "urlop" || d.end.toLowerCase() === "urlop") {
+          d.start = d.end = d.godziny = "urlop";
+        }
+      });
+
       const unikalneLoginy = [...new Set(wszystkie.map(d => d.login))];
       const filterUser = document.getElementById("filterUser");
-
       if (filterUser.options.length <= 1) {
-        filterUser.innerHTML = '<option value="">Wszyscy</option>' + 
+        filterUser.innerHTML = '<option value="">Wszyscy</option>' +
           unikalneLoginy.map(email => {
             const name = loginToNameMap[email] || email;
             return `<option value="${email}">${name}</option>`;
@@ -216,16 +222,17 @@
 
       const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
       const filterMonth = document.getElementById("filterMonth");
-
       if (filterMonth.options.length <= 1) {
-        filterMonth.innerHTML = '<option value="">Wszystkie</option>' + 
+        filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
           miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
       }
 
-      aktualneDane = wszystkie.filter(d =>
-        (!filterUser.value || d.login === filterUser.value) &&
-        (!filterMonth.value || d.data?.startsWith(filterMonth.value))
-      ).sort((a, b) => new Date(b.data) - new Date(a.data));
+      aktualneDane = wszystkie
+        .filter(d =>
+          (!filterUser.value || d.login === filterUser.value) &&
+          (!filterMonth.value || d.data.startsWith(filterMonth.value))
+        )
+        .sort((a, b) => new Date(b.data) - new Date(a.data));
 
       const tbody = document.querySelector("#tabela-pracownikow tbody");
       tbody.innerHTML = "";
@@ -236,8 +243,14 @@
         tr.innerHTML = `
           <td>${name}</td>
           <td>${d.data}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}', 'start', this.innerText)">${d.start}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}', 'end', this.innerText)">${d.end}</td>
+          <td contenteditable
+              onblur="zapiszZmiane('${d.id}', 'start', this.innerText)">
+            ${d.start}
+          </td>
+          <td contenteditable
+              onblur="zapiszZmiane('${d.id}', 'end', this.innerText)">
+            ${d.end}
+          </td>
           <td>${d.godziny}</td>
           <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
         `;
@@ -250,21 +263,40 @@
         .toFixed(2);
 
       document.querySelector("#tabela-pracownikow tfoot").innerHTML = `
-        <tr><td colspan="4"><strong>Razem</strong></td><td>${suma}</td><td></td></tr>
+        <tr>
+          <td colspan="4"><strong>Razem</strong></td>
+          <td>${suma}</td>
+          <td></td>
+        </tr>
       `;
     }
 
     async function zapiszZmiane(id, pole, wartosc) {
-      wartosc = wartosc.trim().toLowerCase() === "urlop" ? "urlop" : wartosc;
-      if (wartosc !== "urlop" && (pole === "start" || pole === "end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
-        alert("Błędny format godziny (HH:MM) lub wpisz 'urlop'");
-        wczytaj(); return;
-      }
+      const v = wartosc.trim().toLowerCase();
       const ref = db.collection("godziny").doc(id);
+
+      // Ścieżka „urlop” nadpisuje obie kolumny i godziny
+      if (v === "urlop") {
+        await ref.update({
+          start: "urlop",
+          end:   "urlop",
+          godziny: "urlop"
+        });
+        wczytaj();
+        return;
+      }
+
+      // Walidacja formatu HH:MM
+      if (!/^\d{2}:\d{2}$/.test(v)) {
+        alert("Błędny format godziny (HH:MM) lub wpisz 'urlop'");
+        wczytaj();
+        return;
+      }
+
       const snap = await ref.get();
       if (!snap.exists) return;
       const dane = snap.data();
-      dane[pole] = wartosc;
+      dane[pole] = v;
       dane.godziny = obliczGodziny(dane.start, dane.end);
       await ref.set(dane);
       wczytaj();
@@ -277,38 +309,39 @@
       }
     }
 
-    document.getElementById("exportBtn").addEventListener("click", () => {
-      const wb = XLSX.utils.book_new();
+    document.getElementById("exportBtn")
+      .addEventListener("click", () => {
+        const wb = XLSX.utils.book_new();
 
-      const daneDoEksportu = aktualneDane.map(row => ({
-        Pracownik: loginToNameMap[row.login] || row.login,
-        Data: row.data,
-        Start: row.start,
-        Koniec: row.end,
-        Godziny: row.godziny
-      }));
+        const daneDoEksportu = aktualneDane.map(row => ({
+          Pracownik: loginToNameMap[row.login] || row.login,
+          Data: row.data,
+          Start: row.start,
+          Koniec: row.end,
+          Godziny: row.godziny
+        }));
 
-      const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
-      XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
+        const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
+        XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
 
-      const raport = aktualneDane.map(row => {
-        const isUrlop = row.godziny === "urlop" || row.start === "urlop" || row.end === "urlop";
-        return {
-          "Kod pracownika": row.login.split("@")[0],
-          "Data": row.data,
-          "Rodzaj czasu": isUrlop ? "URLOP" : "PRACA",
-          "Od godziny": isUrlop ? "" : row.start,
-          "Do godziny": isUrlop ? "" : row.end,
-          "Liczba godzin": isUrlop ? "" : row.godziny,
-          "Opis": isUrlop ? "Urlop" : "Ewidencja RCP"
-        };
+        const raport = aktualneDane.map(row => {
+          const isUrlop = row.godziny === "urlop";
+          return {
+            "Kod pracownika": row.login.split("@")[0],
+            "Data": row.data,
+            "Rodzaj czasu": isUrlop ? "URLOP" : "PRACA",
+            "Od godziny": isUrlop ? "" : row.start,
+            "Do godziny": isUrlop ? "" : row.end,
+            "Liczba godzin": isUrlop ? "" : row.godziny,
+            "Opis": isUrlop ? "Urlop" : "Ewidencja RCP"
+          };
+        });
+
+        const ws2 = XLSX.utils.json_to_sheet(raport);
+        XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
+
+        XLSX.writeFile(wb, "raport_miesieczny.xlsx");
       });
-
-      const ws2 = XLSX.utils.json_to_sheet(raport);
-      XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
-
-      XLSX.writeFile(wb, "raport_miesieczny.xlsx");
-    });
 
     document.getElementById("filterUser").addEventListener("change", wczytaj);
     document.getElementById("filterMonth").addEventListener("change", wczytaj);
