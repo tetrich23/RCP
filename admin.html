@@ -165,43 +165,51 @@
       if (!start || !end) return "0.00";
       const s = start.toLowerCase(), e = end.toLowerCase();
       if (s === "urlop" || e === "urlop") return "urlop";
-      if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
+      if (!/\d{2}:\d{2}/.test(start) || !/\d{2}:\d{2}/.test(end)) return "0.00";
       const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
       const total = (parseInt(eh)*60 + parseInt(em)) - (parseInt(sh)*60 + parseInt(sm));
       return total > 0 ? (total/60).toFixed(2) : "0.00";
     }
 
     async function wczytaj() {
-      const snapshot = await db.collection("godziny").get();
-      const wszystkie = snapshot.docs.map(doc => {
+      const snapshotGodziny = await db.collection("godziny").get();
+      const snapshotUrlopy = await db.collection("urlopy").get();
+
+      const godziny = snapshotGodziny.docs.map(doc => {
         const d = doc.data();
         return {
           id: doc.id,
           login: d.login || "",
           data: d.data || "",
           start: d.start || "",
-          end:   d.end   || "",
+          end: d.end || "",
           godziny: d.godziny || obliczGodziny(d.start, d.end),
+          typ: "godziny"
         };
       });
 
-      // Jeśli pole godziny ma "urlop", wstawiamy "urlop" też do start/end
-      wszystkie.forEach(d => {
-        if (d.godziny.toLowerCase() === "urlop") {
-          d.start = d.end = "urlop";
-        }
+      const urlopy = snapshotUrlopy.docs.map(doc => {
+        const d = doc.data();
+        return {
+          id: doc.id,
+          login: d.login || "",
+          data: d.data || d.zakresOd || "",
+          start: d.typ || "urlop",
+          end: `${d.zakresOd || ""} - ${d.zakresDo || ""}`,
+          godziny: "urlop",
+          typ: "urlop"
+        };
       });
 
-      // filtry
+      const wszystkie = [...godziny, ...urlopy];
+
       const filterUser = document.getElementById("filterUser");
       if (filterUser.options.length <= 1) {
         const loginy = [...new Set(wszystkie.map(d => d.login))];
         filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-          loginy.map(email => {
-            const name = loginToNameMap[email] || email;
-            return `<option value="${email}">${name}</option>`;
-          }).join('');
+          loginy.map(email => `<option value="${email}">${loginToNameMap[email] || email}</option>`).join('');
       }
+
       const filterMonth = document.getElementById("filterMonth");
       if (filterMonth.options.length <= 1) {
         const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
@@ -212,23 +220,25 @@
       aktualneDane = wszystkie
         .filter(d =>
           (!filterUser.value || d.login === filterUser.value) &&
-          (!filterMonth.value || d.data.startsWith(filterMonth.value))
+          (!filterMonth.value || d.data?.startsWith(filterMonth.value))
         )
         .sort((a,b) => new Date(b.data) - new Date(a.data));
 
       const tbody = document.querySelector("#tabela-pracownikow tbody");
       tbody.innerHTML = "";
+
       aktualneDane.forEach(d => {
         const tr = document.createElement("tr");
         const name = loginToNameMap[d.login] || d.login;
         tr.innerHTML = `
           <td>${name}</td>
           <td>${d.data}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
+          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'${d.id}\',\'start\',this.innerText)"' : ''}>${d.start}</td>
+          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'${d.id}\',\'end\',this.innerText)"' : ''}>${d.end}</td>
           <td>${d.godziny}</td>
-          <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
-        `;
+          <td>
+            ${d.typ==='godziny' ? `<button onclick="usunRekord('${d.id}')">Usuń</button>` : `<button onclick="usunUrlop('${d.id}')">Usuń</button>`}
+          </td>`;
         tbody.appendChild(tr);
       });
 
@@ -244,17 +254,15 @@
         </tr>`;
     }
 
-    async function zapiszZmiane(id,pole,wartosc) {
+    async function zapiszZmiane(id, pole, wartosc) {
       const v = wartosc.trim().toLowerCase();
       const ref = db.collection("godziny").doc(id);
 
-      // wpis "urlop" nadpisuje cały wpis
       if (v === "urlop") {
         await ref.update({ start:"urlop", end:"urlop", godziny:"urlop" });
         return wczytaj();
       }
 
-      // walidacja HH:MM
       if (!/^\d{2}:\d{2}$/.test(v)) {
         alert("Błędny format godziny (HH:MM) lub wpisz 'urlop'");
         return wczytaj();
@@ -276,6 +284,13 @@
       }
     }
 
+    async function usunUrlop(id) {
+      if (confirm("Usunąć urlop?")) {
+        await db.collection("urlopy").doc(id).delete();
+        wczytaj();
+      }
+    }
+
     document.getElementById("exportBtn").addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
       const daneDoEksportu = aktualneDane.map(r => ({
@@ -286,15 +301,15 @@
       XLSX.utils.book_append_sheet(wb,ws1,"Godziny");
 
       const raport = aktualneDane.map(r => {
-        const isU = r.godziny==="urlop";
+        const isU = r.godziny === "urlop";
         return {
-          "Kod pracownika":r.login.split("@")[0],
-          Data:r.data,
-          "Rodzaj czasu":isU?"URLOP":"PRACA",
-          "Od godziny":isU?"":r.start,
-          "Do godziny":isU?"":r.end,
-          "Liczba godzin":isU?"":r.godziny,
-          Opis:isU?"Urlop":"Ewidencja RCP"
+          "Kod pracownika": r.login.split("@")[0],
+          Data: r.data,
+          "Rodzaj czasu": isU ? "URLOP" : "PRACA",
+          "Od godziny": isU ? "" : r.start,
+          "Do godziny": isU ? "" : r.end,
+          "Liczba godzin": isU ? "" : r.godziny,
+          Opis: isU ? r.start : "Ewidencja RCP"
         };
       });
       const ws2 = XLSX.utils.json_to_sheet(raport);
@@ -305,7 +320,8 @@
     document.getElementById("filterUser").addEventListener("change", wczytaj);
     document.getElementById("filterMonth").addEventListener("change", wczytaj);
     window.zapiszZmiane = zapiszZmiane;
-    window.usunRekord    = usunRekord;
+    window.usunRekord = usunRekord;
+    window.usunUrlop = usunUrlop;
   </script>
 </body>
 </html>
