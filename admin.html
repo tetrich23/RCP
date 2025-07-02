@@ -2,81 +2,52 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel RCP</title>
+  <title>Panel Kadry</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    :root {
-      --primary-color: #0061ff;
-      --primary-hover: #004dcc;
-      --background: #f4f6f8;
-      --text: #1c1e21;
-      --table-header-bg: #eef1f5;
-      --table-border: #d0d4d9;
-      --table-hover: #f0f3f7;
-    }
-
     body {
       margin: 0;
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: var(--background);
-      color: var(--text);
-      display: flex;
-      min-height: 100vh;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f8;
+      color: #1c1e21;
     }
 
     .sidebar {
-      width: 280px;
-      background: white;
-      padding: 24px;
-      border-right: 1px solid var(--table-border);
+      width: 220px;
+      background-color: #003366;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      color: white;
+      padding: 20px;
     }
 
-    .content {
-      flex-grow: 1;
+    .sidebar h2 {
+      font-size: 1.4rem;
+      margin-bottom: 20px;
+    }
+
+    .sidebar label, .sidebar select, .sidebar button {
+      display: block;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+
+    .main {
+      margin-left: 240px;
       padding: 24px;
     }
 
     h1 {
-      text-align: left;
+      text-align: center;
       font-weight: 600;
-      font-size: 1.8rem;
-      margin-bottom: 24px;
-      color: var(--primary-color);
-    }
-
-    label {
-      display: block;
-      margin-bottom: 12px;
-      font-weight: 500;
-    }
-
-    select, button {
-      padding: 8px 14px;
-      border: 1px solid #ccd1d7;
-      border-radius: 6px;
-      background: white;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    select:focus, button:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(0, 97, 255, 0.2);
-    }
-
-    button {
-      background-color: var(--primary-color);
-      color: white;
-      border: none;
-      margin-top: 16px;
-    }
-
-    button:hover {
-      background-color: var(--primary-hover);
+      font-size: 2rem;
+      margin-bottom: 30px;
+      color: #0061ff;
     }
 
     table {
@@ -84,26 +55,26 @@
       margin-top: 24px;
       border-collapse: collapse;
       background: white;
-      border: 1px solid var(--table-border);
+      border: 1px solid #d0d4d9;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
       border-radius: 6px;
       overflow: hidden;
     }
 
     thead {
-      background-color: var(--table-header-bg);
+      background-color: #eef1f5;
       font-weight: 600;
     }
 
     th, td {
-      border-bottom: 1px solid var(--table-border);
+      border-bottom: 1px solid #d0d4d9;
       padding: 12px;
       text-align: center;
       font-size: 14px;
     }
 
     tbody tr:hover {
-      background-color: var(--table-hover);
+      background-color: #f0f3f7;
     }
 
     td[contenteditable] {
@@ -113,23 +84,23 @@
 
     tfoot td {
       font-weight: bold;
-      background-color: var(--table-header-bg);
+      background-color: #eef1f5;
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <h1>Panel RCP</h1>
-    <label>Pracownik:
-      <select id="filterUser"><option value="">Wszyscy</option></select>
-    </label>
-    <label>Miesiąc:
-      <select id="filterMonth"><option value="">Wszystkie</option></select>
-    </label>
+    <h2>Panel RCP</h2>
+    <label for="filterUser">Pracownik:</label>
+    <select id="filterUser"><option value="">Wszyscy</option></select>
+
+    <label for="filterMonth">Miesiąc:</label>
+    <select id="filterMonth"><option value="">Wszystkie</option></select>
+
     <button id="exportBtn">Eksportuj</button>
   </div>
 
-  <div class="content">
+  <div class="main">
     <table id="tabela-pracownikow">
       <thead>
         <tr>
@@ -184,7 +155,8 @@
       const e = end.toLowerCase();
       if (s === "urlop" || e === "urlop") return "urlop";
       if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
-      const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
+      const [sh, sm] = start.split(":");
+      const [eh, em] = end.split(":");
       const total = (parseInt(eh)*60 + parseInt(em)) - (parseInt(sh)*60 + parseInt(sm));
       return total > 0 ? (total/60).toFixed(2) : "0.00";
     }
@@ -236,8 +208,12 @@
         tr.innerHTML = `
           <td>${name}</td>
           <td>${d.data}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}', 'start', this.innerText)">${d.start}</td>
-          <td contenteditable onblur="zapiszZmiane('${d.id}', 'end', this.innerText)">${d.end}</td>
+          <td contenteditable onblur="zapiszZmiane('${d.id}', 'start', this.innerText)">
+            ${d.start?.toLowerCase() === "urlop" || d.godziny === "urlop" ? "urlop" : d.start || ""}
+          </td>
+          <td contenteditable onblur="zapiszZmiane('${d.id}', 'end', this.innerText)">
+            ${d.end?.toLowerCase() === "urlop" || d.godziny === "urlop" ? "urlop" : d.end || ""}
+          </td>
           <td>${d.godziny}</td>
           <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
         `;
