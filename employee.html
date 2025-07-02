@@ -212,19 +212,38 @@
     }
 
     async function zapiszUrlop() {
-      const od = document.getElementById("urlopOd").value;
-      const do_ = document.getElementById("urlopDo").value;
-      const typ = document.getElementById("typUrlopu").value;
-      if (!od || !do_ || !typ) return alert("Uzupełnij wszystkie pola urlopowe!");
-      try {
-        await db.collection("urlopy").add({ login, od, do: do_, typ });
-        alert("Urlop zapisany");
-        wczytaj();
-      } catch (err) {
-        console.error("Błąd zapisu urlopu:", err);
-        alert("Błąd zapisu urlopu");
-      }
+  const od = document.getElementById("urlopOd").value;
+  const do_ = document.getElementById("urlopDo").value;
+  const typ = document.getElementById("typUrlopu").value;
+  if (!od || !do_ || !typ) return alert("Uzupełnij wszystkie pola urlopowe!");
+
+  const startDate = new Date(od);
+  const endDate = new Date(do_);
+  if (startDate > endDate) return alert("Data 'od' nie może być po 'do'.");
+
+  try {
+    const batch = db.batch(); // użycie batcha przyspiesza zapis wielu dokumentów
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    for (let d = new Date(startDate); d <= endDate; d = new Date(d.getTime() + dayMs)) {
+      const dataStr = d.toISOString().split("T")[0];
+      const ref = db.collection("godziny").doc(); // automatyczne ID
+      batch.set(ref, {
+        login,
+        data: dataStr,
+        typ: "URLOP",
+        podtyp: typ
+      });
     }
+
+    await batch.commit();
+    alert("Urlop zapisany");
+    wczytaj(); // odświeżenie listy
+  } catch (err) {
+    console.error("Błąd zapisu urlopu:", err);
+    alert("Błąd zapisu urlopu");
+  }
+}
 
     async function zapiszGodziny() {
       const data = document.getElementById("data").value;
