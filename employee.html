@@ -266,35 +266,44 @@
     }
 
     async function wczytaj() {
-      const lista = document.getElementById("lista");
-      lista.innerHTML = "<p>Ładowanie danych...</p>";
-      try {
-        const snap = await db.collection("godziny")
-          .where("login", "==", login)
-          .orderBy("data", "asc")
-          .get();
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "<p>Ładowanie danych...</p>";
+  try {
+    const snap = await db.collection("godziny")
+      .where("login", "==", login)
+      .orderBy("data", "asc")
+      .get();
 
-        if (snap.empty) {
-          lista.innerHTML = "<p>Brak danych.</p>";
-          return;
-        }
-
-        zapisaneDane = [];
-        lista.innerHTML = "";
-
-        snap.forEach(doc => {
-          const g = doc.data();
-          zapisaneDane.push(g);
-          const el = document.createElement("div");
-          el.className = "entry";
-          el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
-          lista.appendChild(el);
-        });
-      } catch (err) {
-        console.error("Błąd wczytywania:", err);
-        lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
-      }
+    if (snap.empty) {
+      lista.innerHTML = "<p>Brak danych.</p>";
+      return;
     }
+
+    zapisaneDane = [];
+    lista.innerHTML = "";
+
+    snap.forEach(doc => {
+      const g = doc.data();
+      zapisaneDane.push(g);
+
+      const el = document.createElement("div");
+      el.className = "entry";
+
+      if (g.typ === "URLOP") {
+        el.innerText = `${g.data}: ${g.podtyp || "Urlop"}`;
+      } else if (g.start && g.end && g.godziny) {
+        el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
+      } else {
+        el.innerText = `${g.data}: (niekompletny wpis)`;
+      }
+
+      lista.appendChild(el);
+    });
+  } catch (err) {
+    console.error("Błąd wczytywania:", err);
+    lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
+  }
+}
 
     function eksportuj() {
       if (!zapisaneDane.length) return alert("Brak danych do eksportu.");
