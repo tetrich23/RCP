@@ -17,7 +17,6 @@
       --table-border: #d0d4d9;
       --table-hover: #f0f3f7;
     }
-
     body {
       margin: 0;
       font-family: 'Segoe UI', Roboto, sans-serif;
@@ -26,33 +25,27 @@
       display: flex;
       min-height: 100vh;
     }
-
     .sidebar {
       width: 280px;
       background: white;
       padding: 24px;
       border-right: 1px solid var(--table-border);
     }
-
     .content {
       flex-grow: 1;
       padding: 24px;
     }
-
     h1 {
-      text-align: left;
       font-weight: 600;
       font-size: 1.8rem;
       margin-bottom: 24px;
       color: var(--primary-color);
     }
-
     label {
       display: block;
       margin-bottom: 12px;
       font-weight: 500;
     }
-
     select, button {
       padding: 8px 14px;
       border: 1px solid #ccd1d7;
@@ -60,57 +53,48 @@
       background: white;
       font-size: 14px;
       cursor: pointer;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
+      transition: background 0.2s, box-shadow 0.2s;
     }
-
     select:focus, button:focus {
       outline: none;
-      box-shadow: 0 0 0 2px rgba(0, 97, 255, 0.2);
+      box-shadow: 0 0 0 2px rgba(0,97,255,0.2);
     }
-
     button {
       background-color: var(--primary-color);
       color: white;
       border: none;
       margin-top: 16px;
     }
-
     button:hover {
       background-color: var(--primary-hover);
     }
-
     table {
       width: 100%;
       margin-top: 24px;
       border-collapse: collapse;
       background: white;
       border: 1px solid var(--table-border);
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       border-radius: 6px;
       overflow: hidden;
     }
-
     thead {
       background-color: var(--table-header-bg);
       font-weight: 600;
     }
-
     th, td {
       border-bottom: 1px solid var(--table-border);
       padding: 12px;
       text-align: center;
       font-size: 14px;
     }
-
     tbody tr:hover {
       background-color: var(--table-hover);
     }
-
     td[contenteditable] {
       background-color: #f9fcff;
       border: 1px dashed #b4c1d3;
     }
-
     tfoot td {
       font-weight: bold;
       background-color: var(--table-header-bg);
@@ -152,7 +136,6 @@
       authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
       projectId: "rejestracja-czasu-pracy-e345e",
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -180,8 +163,7 @@
 
     function obliczGodziny(start, end) {
       if (!start || !end) return "0.00";
-      const s = start.toLowerCase();
-      const e = end.toLowerCase();
+      const s = start.toLowerCase(), e = end.toLowerCase();
       if (s === "urlop" || e === "urlop") return "urlop";
       if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
       const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
@@ -198,31 +180,31 @@
           login: d.login || "",
           data: d.data || "",
           start: d.start || "",
-          end: d.end || "",
+          end:   d.end   || "",
           godziny: d.godziny || obliczGodziny(d.start, d.end),
         };
       });
 
-      // Jeżeli któryś z wpisów to urlop, wymuśmy spójne wartości
+      // Jeśli pole godziny ma "urlop", wstawiamy "urlop" też do start/end
       wszystkie.forEach(d => {
-        if (d.start.toLowerCase() === "urlop" || d.end.toLowerCase() === "urlop") {
-          d.start = d.end = d.godziny = "urlop";
+        if (d.godziny.toLowerCase() === "urlop") {
+          d.start = d.end = "urlop";
         }
       });
 
-      const unikalneLoginy = [...new Set(wszystkie.map(d => d.login))];
+      // filtry
       const filterUser = document.getElementById("filterUser");
       if (filterUser.options.length <= 1) {
+        const loginy = [...new Set(wszystkie.map(d => d.login))];
         filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-          unikalneLoginy.map(email => {
+          loginy.map(email => {
             const name = loginToNameMap[email] || email;
             return `<option value="${email}">${name}</option>`;
           }).join('');
       }
-
-      const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
       const filterMonth = document.getElementById("filterMonth");
       if (filterMonth.options.length <= 1) {
+        const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
         filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
           miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
       }
@@ -232,25 +214,18 @@
           (!filterUser.value || d.login === filterUser.value) &&
           (!filterMonth.value || d.data.startsWith(filterMonth.value))
         )
-        .sort((a, b) => new Date(b.data) - new Date(a.data));
+        .sort((a,b) => new Date(b.data) - new Date(a.data));
 
       const tbody = document.querySelector("#tabela-pracownikow tbody");
       tbody.innerHTML = "";
-
       aktualneDane.forEach(d => {
         const tr = document.createElement("tr");
         const name = loginToNameMap[d.login] || d.login;
         tr.innerHTML = `
           <td>${name}</td>
           <td>${d.data}</td>
-          <td contenteditable
-              onblur="zapiszZmiane('${d.id}', 'start', this.innerText)">
-            ${d.start}
-          </td>
-          <td contenteditable
-              onblur="zapiszZmiane('${d.id}', 'end', this.innerText)">
-            ${d.end}
-          </td>
+          <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
+          <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
           <td>${d.godziny}</td>
           <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
         `;
@@ -259,45 +234,37 @@
 
       const suma = aktualneDane
         .filter(r => r.godziny !== "urlop")
-        .reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0)
+        .reduce((acc,r) => acc + parseFloat(r.godziny||0), 0)
         .toFixed(2);
-
       document.querySelector("#tabela-pracownikow tfoot").innerHTML = `
         <tr>
           <td colspan="4"><strong>Razem</strong></td>
           <td>${suma}</td>
           <td></td>
-        </tr>
-      `;
+        </tr>`;
     }
 
-    async function zapiszZmiane(id, pole, wartosc) {
+    async function zapiszZmiane(id,pole,wartosc) {
       const v = wartosc.trim().toLowerCase();
       const ref = db.collection("godziny").doc(id);
 
-      // Ścieżka „urlop” nadpisuje obie kolumny i godziny
+      // wpis "urlop" nadpisuje cały wpis
       if (v === "urlop") {
-        await ref.update({
-          start: "urlop",
-          end:   "urlop",
-          godziny: "urlop"
-        });
-        wczytaj();
-        return;
+        await ref.update({ start:"urlop", end:"urlop", godziny:"urlop" });
+        return wczytaj();
       }
 
-      // Walidacja formatu HH:MM
+      // walidacja HH:MM
       if (!/^\d{2}:\d{2}$/.test(v)) {
         alert("Błędny format godziny (HH:MM) lub wpisz 'urlop'");
-        wczytaj();
-        return;
+        return wczytaj();
       }
 
       const snap = await ref.get();
       if (!snap.exists) return;
       const dane = snap.data();
       dane[pole] = v;
-      dane.godziny = obliczGodziny(dane.start, dane.end);
+      dane.godziny = obliczGodziny(dane.start,dane.end);
       await ref.set(dane);
       wczytaj();
     }
@@ -309,44 +276,36 @@
       }
     }
 
-    document.getElementById("exportBtn")
-      .addEventListener("click", () => {
-        const wb = XLSX.utils.book_new();
+    document.getElementById("exportBtn").addEventListener("click", () => {
+      const wb = XLSX.utils.book_new();
+      const daneDoEksportu = aktualneDane.map(r => ({
+        Pracownik: loginToNameMap[r.login]||r.login,
+        Data: r.data, Start:r.start, Koniec:r.end, Godziny:r.godziny
+      }));
+      const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
+      XLSX.utils.book_append_sheet(wb,ws1,"Godziny");
 
-        const daneDoEksportu = aktualneDane.map(row => ({
-          Pracownik: loginToNameMap[row.login] || row.login,
-          Data: row.data,
-          Start: row.start,
-          Koniec: row.end,
-          Godziny: row.godziny
-        }));
-
-        const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
-        XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
-
-        const raport = aktualneDane.map(row => {
-          const isUrlop = row.godziny === "urlop";
-          return {
-            "Kod pracownika": row.login.split("@")[0],
-            "Data": row.data,
-            "Rodzaj czasu": isUrlop ? "URLOP" : "PRACA",
-            "Od godziny": isUrlop ? "" : row.start,
-            "Do godziny": isUrlop ? "" : row.end,
-            "Liczba godzin": isUrlop ? "" : row.godziny,
-            "Opis": isUrlop ? "Urlop" : "Ewidencja RCP"
-          };
-        });
-
-        const ws2 = XLSX.utils.json_to_sheet(raport);
-        XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
-
-        XLSX.writeFile(wb, "raport_miesieczny.xlsx");
+      const raport = aktualneDane.map(r => {
+        const isU = r.godziny==="urlop";
+        return {
+          "Kod pracownika":r.login.split("@")[0],
+          Data:r.data,
+          "Rodzaj czasu":isU?"URLOP":"PRACA",
+          "Od godziny":isU?"":r.start,
+          "Do godziny":isU?"":r.end,
+          "Liczba godzin":isU?"":r.godziny,
+          Opis:isU?"Urlop":"Ewidencja RCP"
+        };
       });
+      const ws2 = XLSX.utils.json_to_sheet(raport);
+      XLSX.utils.book_append_sheet(wb,ws2,"Raport enova");
+      XLSX.writeFile(wb,"raport_miesieczny.xlsx");
+    });
 
     document.getElementById("filterUser").addEventListener("change", wczytaj);
     document.getElementById("filterMonth").addEventListener("change", wczytaj);
     window.zapiszZmiane = zapiszZmiane;
-    window.usunRekord = usunRekord;
+    window.usunRekord    = usunRekord;
   </script>
 </body>
 </html>
