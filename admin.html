@@ -234,7 +234,7 @@
           <td>${name}</td>
           <td>${d.data}</td>
           <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'${d.id}\',\'start\',this.innerText)"' : ''}>${d.start}</td>
-          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'${d.id}\',\'end\',this.innerText)"' : ''}>${d.end}</td>
+          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'' + d.id + '\',\'end\',this.innerText)"' : ''}>${d.typ==='urlop' ? d.start : d.end}</td>
           <td>${d.godziny}</td>
           <td>
             ${d.typ==='godziny' ? `<button onclick="usunRekord('${d.id}')">Usuń</button>` : `<button onclick="usunUrlop('${d.id}')">Usuń</button>`}
