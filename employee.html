@@ -211,39 +211,41 @@
       button.classList.add('active');
     }
 
-    async function zapiszUrlop() {
+   async function zapiszUrlop() {
   const od = document.getElementById("urlopOd").value;
   const do_ = document.getElementById("urlopDo").value;
   const typ = document.getElementById("typUrlopu").value;
+
   if (!od || !do_ || !typ) return alert("Uzupełnij wszystkie pola urlopowe!");
 
   const startDate = new Date(od);
   const endDate = new Date(do_);
+
   if (startDate > endDate) return alert("Data 'od' nie może być po 'do'.");
 
   try {
-    const batch = db.batch(); // użycie batcha przyspiesza zapis wielu dokumentów
     const dayMs = 24 * 60 * 60 * 1000;
 
     for (let d = new Date(startDate); d <= endDate; d = new Date(d.getTime() + dayMs)) {
       const dataStr = d.toISOString().split("T")[0];
-      const ref = db.collection("godziny").doc(); // automatyczne ID
-      batch.set(ref, {
+
+      await db.collection("urlopy").add({
         login,
         data: dataStr,
-        typ: "URLOP",
-        podtyp: typ
+        typ: typ,
+        zakresOd: od,
+        zakresDo: do_
       });
     }
 
-    await batch.commit();
     alert("Urlop zapisany");
-    wczytaj(); // odświeżenie listy
+    wczytaj(); // odświeżenie listy, jeśli chcesz też tu ładować urlopy
   } catch (err) {
     console.error("Błąd zapisu urlopu:", err);
     alert("Błąd zapisu urlopu");
   }
 }
+
 
     async function zapiszGodziny() {
       const data = document.getElementById("data").value;
@@ -268,30 +270,24 @@
     async function wczytaj() {
   const lista = document.getElementById("lista");
   lista.innerHTML = "<p>Ładowanie danych...</p>";
+  zapisaneDane = [];
+
   try {
-    const snap = await db.collection("godziny")
-      .where("login", "==", login)
-      .orderBy("data", "asc")
-      .get();
+    const [godzinySnap, urlopySnap] = await Promise.all([
+      db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get(),
+      db.collection("urlopy").where("login", "==", login).orderBy("data", "asc").get()
+    ]);
 
-    if (snap.empty) {
-      lista.innerHTML = "<p>Brak danych.</p>";
-      return;
-    }
-
-    zapisaneDane = [];
     lista.innerHTML = "";
 
-    snap.forEach(doc => {
+    godzinySnap.forEach(doc => {
       const g = doc.data();
       zapisaneDane.push(g);
 
       const el = document.createElement("div");
       el.className = "entry";
 
-      if (g.typ === "URLOP") {
-        el.innerText = `${g.data}: ${g.podtyp || "Urlop"}`;
-      } else if (g.start && g.end && g.godziny) {
+      if (g.start && g.end && g.godziny) {
         el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
       } else {
         el.innerText = `${g.data}: (niekompletny wpis)`;
@@ -299,6 +295,22 @@
 
       lista.appendChild(el);
     });
+
+    urlopySnap.forEach(doc => {
+      const u = doc.data();
+      zapisaneDane.push(u);
+
+      const el = document.createElement("div");
+      el.className = "entry";
+      el.innerText = `${u.data}: ${u.typ} (urlop ${u.zakresOd} – ${u.zakresDo})`;
+
+      lista.appendChild(el);
+    });
+
+    if (!godzinySnap.size && !urlopySnap.size) {
+      lista.innerHTML = "<p>Brak danych.</p>";
+    }
+
   } catch (err) {
     console.error("Błąd wczytywania:", err);
     lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
