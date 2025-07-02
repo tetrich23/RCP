@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Kadry</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <!-- XLSX do eksportu -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    body { font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; background: #f6f8fa; color: #333; }
+    h1 { text-align: center; color: #1e3c72; }
+    label { font-weight: 500; margin-right: 10px; }
+    select { padding: 6px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 14px; background: #fff; }
+    button { padding: 8px 16px; background-color: #1e90ff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    button:hover { background-color: #167ac6; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+    th, td { padding: 10px; font-size: 14px; text-align: center; border-bottom: 1px solid #f0f0f0; }
+    th { background-color: #f1f4f9; }
+    td[contenteditable] { background-color: #fcfcfc; border: 1px dashed transparent; }
+    td[contenteditable]:hover { background-color: #f2f9ff; border-color: #cce4ff; }
+    td[contenteditable]:focus { outline: none; border: 1px solid #1e90ff; background-color: #eaf4ff; }
+    tfoot td { font-weight: bold; background-color: #f1f4f9; }
+  </style>
+</head>
+<body>
+
+<h1>Panel RCP</h1>
+
+<label>Pracownik:
+  <select id="filterUser"><option value="">Wszyscy</option></select>
+</label>
+
+<label>Miesiąc:
+  <select id="filterMonth"><option value="">Wszystkie</option></select>
+</label>
+
+<button id="exportBtn">Eksportuj</button>
+
+<table id="tabela-pracownikow">
+  <thead>
+    <tr>
+      <th>Login</th>
+      <th>Data</th>
+      <th>Start</th>
+      <th>Koniec</th>
+      <th>Godziny</th>
+      <th>Akcje</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+  <tfoot></tfoot>
+</table>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBctpY5tMVCISGsUsw_PwNUSQPnUlW2nPc",
+  authDomain: "rejestracja-czasu-pracy-e345e.firebaseapp.com",
+  projectId: "rejestracja-czasu-pracy-e345e",
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+firebase.auth().onAuthStateChanged(user => {
+  if (!user) {
+    alert("Musisz być zalogowany.");
+    window.location.href = "login.html";
+  } else {
+    wczytaj();
+  }
+});
+
+const tabelaBody  = document.querySelector("#tabela-pracownikow tbody");
+const tabelaFoot  = document.querySelector("#tabela-pracownikow tfoot");
+const filterUser  = document.getElementById("filterUser");
+const filterMonth = document.getElementById("filterMonth");
+const exportBtn   = document.getElementById("exportBtn");
+let aktualneDane  = [];
+
+function obliczGodziny(start, end) {
+  if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
+  const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
+  const godziny = ((eh * 60 + parseInt(em)) - (sh * 60 + parseInt(sm))) / 60;
+  return godziny > 0 ? godziny.toFixed(2) : "0.00";
+}
+
+async function wczytaj() {
+  const snapshot = await db.collection("godziny").get();
+  const wszystkieDane = snapshot.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      login: d.login || "",
+      data: d.data || "",
+      start: d.start || "",
+      end: d.end || "",
+      godziny: d.godziny || obliczGodziny(d.start, d.end),
+    };
+  });
+
+  const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
+  if (filterUser.options.length <= 1) {
+    filterUser.innerHTML = '<option value="">Wszyscy</option>' +
+      unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+  }
+
+  const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
+  if (filterMonth.options.length <= 1) {
+    filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
+      miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
+  }
+
+  aktualneDane = wszystkieDane.filter(d =>
+    (!filterUser.value || d.login === filterUser.value) &&
+    (!filterMonth.value || d.data?.startsWith(filterMonth.value))
+  );
+
+  aktualneDane.sort((a, b) => new Date(b.data) - new Date(a.data));
+
+  tabelaBody.innerHTML = "";
+  aktualneDane.forEach(d => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${d.login}</td>
+      <td>${d.data}</td>
+      <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
+      <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
+      <td class="godziny">${d.godziny}</td>
+      <td><button onclick="usunRekord('${d.id}')">Usuń</button></td>
+    `;
+    tabelaBody.appendChild(tr);
+  });
+
+  const suma = aktualneDane.reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0).toFixed(2);
+  tabelaFoot.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${suma}</strong></td><td></td></tr>`;
+}
+
+async function zapiszZmiane(id, pole, wartosc) {
+  if ((pole === "start" || pole === "end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
+    alert("Nieprawidłowy format godziny (HH:MM)");
+    wczytaj();
+    return;
+  }
+  const ref = db.collection("godziny").doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const dane = snap.data();
+  dane[pole] = wartosc;
+  if (dane.start && dane.end) dane.godziny = obliczGodziny(dane.start, dane.end);
+  await ref.set(dane);
+  wczytaj();
+}
+
+async function usunRekord(id) {
+  if (confirm("Usunąć wpis?")) {
+    await db.collection("godziny").doc(id).delete();
+    wczytaj();
+  }
+}
+
+exportBtn.addEventListener("click", () => {
+  const wb = XLSX.utils.book_new();
+
+  const daneDoEksportu = aktualneDane.map(row => ({
+    Login: row.login,
+    Data: row.data,
+    Start: row.start,
+    Koniec: row.end,
+    Godziny: row.godziny
+  }));
+
+  const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
+  XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
+
+  const raport = aktualneDane.map(row => {
+    const kod = row.login.split("@")[0];
+    return {
+      "Kod pracownika": kod,
+      "Data": row.data,
+      "Rodzaj czasu": "PRACA",
+      "Od godziny": row.start,
+      "Do godziny": row.end,
+      "Liczba godzin": row.godziny,
+      "Opis": "Ewidencja RCP"
+    };
+  });
+
+  const ws2 = XLSX.utils.json_to_sheet(raport);
+  XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
+
+  XLSX.writeFile(wb, "raport_miesieczny.xlsx");
+});
+
+filterUser.addEventListener("change", wczytaj);
+filterMonth.addEventListener("change", wczytaj);
+window.zapiszZmiane = zapiszZmiane;
+window.usunRekord = usunRekord;
+</script>
+
+</body>
+</html>
