@@ -42,7 +42,7 @@
 <table id="tabela-pracownikow">
   <thead>
     <tr>
-      <th>Login</th>
+      <th>Pracownik</th>
       <th>Data</th>
       <th>Start</th>
       <th>Koniec</th>
@@ -64,11 +64,24 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-firebase.auth().onAuthStateChanged(user => {
+let usersMap = {};
+
+async function loadUsers() {
+  const snap = await db.collection("uzytkownicy").get();
+  snap.forEach(doc => {
+    const u = doc.data();
+    if (u.login && u.imie && u.nazwisko) {
+      usersMap[u.login] = `${u.imie} ${u.nazwisko}`;
+    }
+  });
+}
+
+firebase.auth().onAuthStateChanged(async user => {
   if (!user) {
     alert("Musisz być zalogowany.");
     window.location.href = "login.html";
   } else {
+    await loadUsers();
     wczytaj();
   }
 });
@@ -82,21 +95,14 @@ let aktualneDane  = [];
 
 function obliczGodziny(start, end) {
   if (!start || !end) return "0.00";
-
-  const startLower = String(start).toLowerCase();
-  const endLower   = String(end).toLowerCase();
-
-  if (startLower === "urlop" || endLower === "urlop") return "urlop";
-
+  const s = String(start).toLowerCase();
+  const e = String(end).toLowerCase();
+  if (s === "urlop" || e === "urlop") return "urlop";
   if (!/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) return "0.00";
-
-  const [sh, sm] = start.split(":");
-  const [eh, em] = end.split(":");
+  const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
   const godziny = ((parseInt(eh) * 60 + parseInt(em)) - (parseInt(sh) * 60 + parseInt(sm))) / 60;
-
   return godziny > 0 ? godziny.toFixed(2) : "0.00";
 }
-
 
 async function wczytaj() {
   const snapshot = await db.collection("godziny").get();
@@ -105,6 +111,7 @@ async function wczytaj() {
     return {
       id: doc.id,
       login: d.login || "",
+      imieNazwisko: usersMap[d.login] || d.login,
       data: d.data || "",
       start: d.start || "",
       end: d.end || "",
@@ -115,7 +122,7 @@ async function wczytaj() {
   const unikalni = [...new Set(wszystkieDane.map(d => d.login))];
   if (filterUser.options.length <= 1) {
     filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-      unikalni.map(u => `<option value="${u}">${u}</option>`).join('');
+      unikalni.map(u => `<option value="${u}">${usersMap[u] || u}</option>`).join('');
   }
 
   const miesiace = [...new Set(wszystkieDane.map(d => d.data?.slice(0,7)).filter(Boolean))];
@@ -135,7 +142,7 @@ async function wczytaj() {
   aktualneDane.forEach(d => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>${d.login}</td>
+      <td>${d.imieNazwisko}</td>
       <td>${d.data}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','start',this.innerText)">${d.start}</td>
       <td contenteditable onblur="zapiszZmiane('${d.id}','end',this.innerText)">${d.end}</td>
@@ -155,23 +162,19 @@ async function wczytaj() {
 
 async function zapiszZmiane(id, pole, wartosc) {
   wartosc = wartosc.trim().toLowerCase() === "urlop" ? "urlop" : wartosc;
-
   if (wartosc !== "urlop" && (pole === "start" || pole === "end") && !/^\d{2}:\d{2}$/.test(wartosc)) {
     alert("Nieprawidłowy format godziny (HH:MM) lub wpisz 'urlop'");
     wczytaj();
     return;
   }
-
   const ref = db.collection("godziny").doc(id);
   const snap = await ref.get();
   if (!snap.exists) return;
   const dane = snap.data();
   dane[pole] = wartosc;
-
   if (dane.start && dane.end) {
     dane.godziny = obliczGodziny(dane.start, dane.end);
   }
-
   await ref.set(dane);
   wczytaj();
 }
@@ -185,21 +188,18 @@ async function usunRekord(id) {
 
 exportBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
-
   const daneDoEksportu = aktualneDane.map(row => ({
-    Login: row.login,
+    Pracownik: row.imieNazwisko,
     Data: row.data,
     Start: row.start,
     Koniec: row.end,
     Godziny: row.godziny
   }));
-
   const ws1 = XLSX.utils.json_to_sheet(daneDoEksportu);
   XLSX.utils.book_append_sheet(wb, ws1, "Godziny");
-
   const raport = aktualneDane.map(row => {
-    const kod = row.login.split("@")[0];
     const isUrlop = row.start === "urlop" || row.end === "urlop" || row.godziny === "urlop";
+    const kod = row.login.split("@")[0];
     return {
       "Kod pracownika": kod,
       "Data": row.data,
@@ -210,10 +210,8 @@ exportBtn.addEventListener("click", () => {
       "Opis": isUrlop ? "Urlop" : "Ewidencja RCP"
     };
   });
-
   const ws2 = XLSX.utils.json_to_sheet(raport);
   XLSX.utils.book_append_sheet(wb, ws2, "Raport enova");
-
   XLSX.writeFile(wb, "raport_miesieczny.xlsx");
 });
 
