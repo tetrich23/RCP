@@ -222,7 +222,18 @@
           (!filterUser.value || d.login === filterUser.value) &&
           (!filterMonth.value || d.data?.startsWith(filterMonth.value))
         )
-        .sort((a,b) => new Date(b.data) - new Date(a.data));
+        .sort((a, b) => {
+  const nameA = (loginToNameMap[a.login] || a.login).toLowerCase();
+  const nameB = (loginToNameMap[b.login] || b.login).toLowerCase();
+  if (nameA < nameB) return -1;
+  if (nameA > nameB) return 1;
+
+  // Jeśli imiona/nazwiska są równe, sortuj po dacie rosnąco
+  const dateA = new Date(a.data);
+  const dateB = new Date(b.data);
+  return dateA - dateB;
+});
+
 
       const tbody = document.querySelector("#tabela-pracownikow tbody");
       tbody.innerHTML = "";
