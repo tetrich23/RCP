@@ -20,25 +20,31 @@
       --highlight: #00bfa6;  /* Akcenty dla przycisków */
     }
 
-    body {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-      background-color: var(--light-bg);
-      color: var(--text-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
 
-    .container {
-      background-color: var(--card-bg);
-      padding: 40px 30px;
-      border-radius: 12px;
-      max-width: 480px;
-      width: 100%;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-    }
+  body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-image: url('energia.png'); /* Zmień 'path_to_image.jpg' na ścieżkę do swojego obrazu */
+  background-size: cover; /* Obrazek rozciągnie się na całą stronę */
+  background-position: center; /* Obrazek będzie wyśrodkowany */
+  background-repeat: no-repeat; /* Obrazek nie będzie się powtarzać */
+  color: var(--text-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+/* Ustawienie tła kontenera z formularzami */
+.container {
+  background-color: var(--card-bg); /* Możesz zmienić na inny kolor, jeśli chcesz */
+  padding: 40px 30px;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
 
     h2 {
       text-align: center;
