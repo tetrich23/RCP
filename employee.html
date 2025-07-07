@@ -10,84 +10,97 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
-  --primary: #3adb76;   /* Zielony – energia odnawialna */
-  --dark-bg: #0e1111;
-  --card-bg: #1b1f1f;
-  --text-light: #f0f0f0;
-  --text-muted: #b0b0b0;
-}
+      --primary: #3abd71;   /* Zielony – energia odnawialna */
+      --secondary: #1a7f3d;  /* Cięższy odcień zieleni */
+      --light-bg: #f4f7f6;   /* Jasne tło */
+      --dark-bg: #1f2a28;    /* Mrok dla nagłówków i przycisków */
+      --card-bg: #273b34;    /* Tło kart */
+      --text-light: #ffffff;
+      --text-muted: #a0a0a0;
+      --highlight: #00bfa6;  /* Akcenty dla przycisków */
+    }
+
     body {
       margin: 0;
       font-family: 'Roboto', sans-serif;
-      background-color: #0f1115;
-      color: #e0e0e0;
+      background-color: var(--light-bg);
+      color: var(--text-light);
       display: flex;
       align-items: center;
       justify-content: center;
       height: 100vh;
     }
+
     .container {
-      background-color: #1a1c22;
+      background-color: var(--card-bg);
       padding: 40px 30px;
       border-radius: 12px;
       max-width: 480px;
       width: 100%;
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
     }
+
     h2 {
       text-align: center;
       margin-bottom: 24px;
-      color: #00d1b2;
+      color: var(--primary);
       font-weight: 700;
       letter-spacing: 0.5px;
     }
+
     label {
       display: block;
       margin: 14px 0 6px;
       font-weight: 500;
-      color: #b0b0b0;
+      color: var(--text-muted);
     }
+
     input, select {
       width: 100%;
       padding: 12px 14px;
       margin-bottom: 12px;
       border: none;
       border-radius: 6px;
-      background-color: #2a2d34;
-      color: #f1f1f1;
+      background-color: #2a3a32;
+      color: var(--text-light);
       font-size: 15px;
       transition: box-shadow 0.2s;
     }
+
     input:focus, select:focus {
       outline: none;
-      box-shadow: 0 0 0 2px #00d1b2;
+      box-shadow: 0 0 0 2px var(--highlight);
     }
+
     button {
       width: 100%;
       padding: 12px;
       margin-top: 10px;
-      background-color: #00bfa6;
+      background-color: var(--highlight);
       border: none;
       border-radius: 6px;
       font-size: 16px;
-      color: #fff;
+      color: var(--text-light);
       font-weight: 600;
       cursor: pointer;
       transition: background-color 0.2s ease, transform 0.1s;
     }
+
     button:hover {
-      background-color: #00a893;
+      background-color: var(--secondary);
       transform: translateY(-1px);
     }
+
     #lista {
       margin-top: 30px;
       max-height: 220px;
       overflow-y: auto;
-      border-top: 1px solid #2d2f36;
+      border-top: 1px solid #333;
       padding-top: 10px;
     }
+
     .entry {
-      background-color: #23262c;
+      background-color: #354e47;
       padding: 10px 15px;
       margin-bottom: 10px;
       border-radius: 6px;
@@ -95,34 +108,40 @@
       font-size: 14px;
       font-family: monospace;
     }
+
     #loginDisplay {
       text-align: center;
       font-size: 14px;
-      color: #888;
+      color: var(--text-muted);
       margin-bottom: 20px;
     }
+
     .tabs {
       display: flex;
       margin-bottom: 20px;
     }
+
     .tab-button {
       flex: 1;
       padding: 10px;
-      background-color: #00bfa6;
+      background-color: var(--highlight);
       border: none;
       border-radius: 6px;
       font-size: 16px;
-      color: #fff;
+      color: var(--text-light);
       font-weight: 600;
       cursor: pointer;
       margin: 0 5px;
     }
+
     .tab-button.active {
-      background-color: #00a893;
+      background-color: var(--secondary);
     }
+
     .tab-content {
       display: none;
     }
+
     .tab-content.active {
       display: block;
     }
@@ -130,7 +149,10 @@
 </head>
 <body>
   <div class="container">
-<h2>Panel Pracownika</h2>
+    <div style="text-align: center; margin-bottom: 20px;">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/1/1b/Green_energy_icon.svg" alt="Logo Nasz Prąd" style="height: 60px; margin-bottom: 10px;">
+      <h2 style="margin: 0;">Panel Pracownika – Nasz Prąd</h2>
+    </div>
     <p id="loginDisplay">Sprawdzanie sesji...</p>
 
     <div class="tabs">
@@ -218,41 +240,40 @@
       button.classList.add('active');
     }
 
-   async function zapiszUrlop() {
-  const od = document.getElementById("urlopOd").value;
-  const do_ = document.getElementById("urlopDo").value;
-  const typ = document.getElementById("typUrlopu").value;
+    async function zapiszUrlop() {
+      const od = document.getElementById("urlopOd").value;
+      const do_ = document.getElementById("urlopDo").value;
+      const typ = document.getElementById("typUrlopu").value;
 
-  if (!od || !do_ || !typ) return alert("Uzupełnij wszystkie pola urlopowe!");
+      if (!od || !do_ || !typ) return alert("Uzupełnij wszystkie pola urlopowe!");
 
-  const startDate = new Date(od);
-  const endDate = new Date(do_);
+      const startDate = new Date(od);
+      const endDate = new Date(do_);
 
-  if (startDate > endDate) return alert("Data 'od' nie może być po 'do'.");
+      if (startDate > endDate) return alert("Data 'od' nie może być po 'do'.");
 
-  try {
-    const dayMs = 24 * 60 * 60 * 1000;
+      try {
+        const dayMs = 24 * 60 * 60 * 1000;
 
-    for (let d = new Date(startDate); d <= endDate; d = new Date(d.getTime() + dayMs)) {
-      const dataStr = d.toISOString().split("T")[0];
+        for (let d = new Date(startDate); d <= endDate; d = new Date(d.getTime() + dayMs)) {
+          const dataStr = d.toISOString().split("T")[0];
 
-      await db.collection("urlopy").add({
-        login,
-        data: dataStr,
-        typ: typ,
-        zakresOd: od,
-        zakresDo: do_
-      });
+          await db.collection("urlopy").add({
+            login,
+            data: dataStr,
+            typ: typ,
+            zakresOd: od,
+            zakresDo: do_
+          });
+        }
+
+        alert("Urlop zapisany");
+        wczytaj();
+      } catch (err) {
+        console.error("Błąd zapisu urlopu:", err);
+        alert("Błąd zapisu urlopu");
+      }
     }
-
-    alert("Urlop zapisany");
-    wczytaj(); // odświeżenie listy, jeśli chcesz też tu ładować urlopy
-  } catch (err) {
-    console.error("Błąd zapisu urlopu:", err);
-    alert("Błąd zapisu urlopu");
-  }
-}
-
 
     async function zapiszGodziny() {
       const data = document.getElementById("data").value;
@@ -275,54 +296,54 @@
     }
 
     async function wczytaj() {
-  const lista = document.getElementById("lista");
-  lista.innerHTML = "<p>Ładowanie danych...</p>";
-  zapisaneDane = [];
+      const lista = document.getElementById("lista");
+      lista.innerHTML = "<p>Ładowanie danych...</p>";
+      zapisaneDane = [];
 
-  try {
-    const [godzinySnap, urlopySnap] = await Promise.all([
-      db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get(),
-      db.collection("urlopy").where("login", "==", login).orderBy("data", "asc").get()
-    ]);
+      try {
+        const [godzinySnap, urlopySnap] = await Promise.all([
+          db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get(),
+          db.collection("urlopy").where("login", "==", login).orderBy("data", "asc").get()
+        ]);
 
-    lista.innerHTML = "";
+        lista.innerHTML = "";
 
-    godzinySnap.forEach(doc => {
-      const g = doc.data();
-      zapisaneDane.push(g);
+        godzinySnap.forEach(doc => {
+          const g = doc.data();
+          zapisaneDane.push(g);
 
-      const el = document.createElement("div");
-      el.className = "entry";
+          const el = document.createElement("div");
+          el.className = "entry";
 
-      if (g.start && g.end && g.godziny) {
-        el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
-      } else {
-        el.innerText = `${g.data}: (niekompletny wpis)`;
+          if (g.start && g.end && g.godziny) {
+            el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
+          } else {
+            el.innerText = `${g.data}: (niekompletny wpis)`;
+          }
+
+          lista.appendChild(el);
+        });
+
+        urlopySnap.forEach(doc => {
+          const u = doc.data();
+          zapisaneDane.push(u);
+
+          const el = document.createElement("div");
+          el.className = "entry";
+          el.innerText = `${u.data}: ${u.typ} (urlop ${u.zakresOd} – ${u.zakresDo})`;
+
+          lista.appendChild(el);
+        });
+
+        if (!godzinySnap.size && !urlopySnap.size) {
+          lista.innerHTML = "<p>Brak danych.</p>";
+        }
+
+      } catch (err) {
+        console.error("Błąd wczytywania:", err);
+        lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
       }
-
-      lista.appendChild(el);
-    });
-
-    urlopySnap.forEach(doc => {
-      const u = doc.data();
-      zapisaneDane.push(u);
-
-      const el = document.createElement("div");
-      el.className = "entry";
-      el.innerText = `${u.data}: ${u.typ} (urlop ${u.zakresOd} – ${u.zakresDo})`;
-
-      lista.appendChild(el);
-    });
-
-    if (!godzinySnap.size && !urlopySnap.size) {
-      lista.innerHTML = "<p>Brak danych.</p>";
     }
-
-  } catch (err) {
-    console.error("Błąd wczytywania:", err);
-    lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
-  }
-}
 
     function eksportuj() {
       if (!zapisaneDane.length) return alert("Brak danych do eksportu.");
