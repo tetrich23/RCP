@@ -12,7 +12,8 @@
       margin: 0;
       padding: 0;
       font-family: 'Roboto', sans-serif;
-      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: cover;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -21,20 +22,18 @@
     }
 
     .login-box, .role-box {
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: rgba(0, 0, 0, 0.6); /* Półprzezroczysty czarny */
       padding: 40px;
       border-radius: 15px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
       width: 100%;
       max-width: 400px;
       text-align: center;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff; /* Ustawiamy kolor tekstu na biały */
     }
 
     h2 {
       font-size: 24px;
-      color: #fff;
       margin-bottom: 20px;
       font-weight: 700;
     }
@@ -47,8 +46,8 @@
       border-radius: 8px;
       border: 1px solid #ccc;
       transition: all 0.3s ease;
-      background-color: rgba(255, 255, 255, 0.2);
-      color: #fff;
+      background-color: rgba(255, 255, 255, 0.2); /* Transparentne tło inputów */
+      color: #fff; /* Kolor tekstu na biały */
     }
 
     input:focus, button:focus {
