@@ -245,7 +245,24 @@ function wyloguj() {
 
 function drukuj() {
   const nowaStrona = window.open('', '', 'height=600,width=800');
-  const tabelaDoDruku = document.querySelector("table").outerHTML;
+  const tabela = document.querySelector("table");
+  const tabelaDoDruku = tabela.cloneNode(true); // Kopiujemy tabelę do wydruku
+
+  // Usuwamy kolumny "Status", "Akcja" i "Usuń"
+  const th = tabelaDoDruku.querySelectorAll("th");
+  const td = tabelaDoDruku.querySelectorAll("td");
+  
+  // Usuwamy odpowiednie kolumny w tabeli
+  for (let i = 0; i < th.length; i++) {
+    if (th[i].textContent === "Status" || th[i].textContent === "Akcja" || th[i].textContent === "Usuń") {
+      th[i].remove();
+      let index = i;
+      td.forEach(t => {
+        if (t.cellIndex === index) t.remove();
+      });
+    }
+  }
+
   const treść = `
     <html>
     <head>
@@ -283,7 +300,7 @@ function drukuj() {
     </head>
     <body>
       <h1>Panel Kierownika</h1>
-      ${tabelaDoDruku}
+      ${tabelaDoDruku.outerHTML}
       <div class="footer">Podpis: __________________</div>
     </body>
     </html>
