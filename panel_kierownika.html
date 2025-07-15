@@ -249,11 +249,13 @@ function drukuj() {
   const treść = `
     <html>
     <head>
-      <title>Lista obecności</title>
+      <title>Panel Kierownika</title>
       <style>
         body {
           font-family: 'Segoe UI', sans-serif;
           text-align: center;
+          margin: 0;
+          padding: 20px;
         }
         table {
           width: 100%; border-collapse: collapse; margin-top: 20px;
@@ -273,10 +275,14 @@ function drukuj() {
           margin-top: 30px;
           font-size: 16px;
         }
+        h1 {
+          font-size: 24px;
+          margin-bottom: 20px;
+        }
       </style>
     </head>
     <body>
-      <h1>Lista obecności za miesiąc ..........</h1>
+      <h1>Panel Kierownika</h1>
       ${tabelaDoDruku}
       <div class="footer">Podpis: __________________</div>
     </body>
