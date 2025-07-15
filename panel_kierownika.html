@@ -52,6 +52,8 @@
 
   <button onclick="filtruj()">Filtruj</button>
   <button id="exportBtn">Eksportuj do Excela</button>
+  <!-- Dodany przycisk drukowania -->
+  <button onclick="drukuj()">Drukuj</button>
 </div>
 
 <table>
@@ -232,6 +234,25 @@ exportBtn.addEventListener("click", () => {
   XLSX.utils.book_append_sheet(wb, ws, "Godziny");
   XLSX.writeFile(wb, "godziny_kierownik.xlsx");
 });
+
+// Funkcja drukowania
+function drukuj() {
+  // Ukryj przyciski i inne elementy, które nie są potrzebne w druku
+  const przyciski = document.querySelectorAll("button");
+  przyciski.forEach(button => button.style.display = "none");
+
+  // Przygotowanie zawartości do druku
+  const zawartoscDoDruku = document.body.innerHTML;
+  document.body.innerHTML = zawartoscDoDruku;
+
+  // Uruchomienie druku
+  window.print();
+
+  // Po zakończeniu drukowania przywróć normalny wygląd strony
+  window.onafterprint = function() {
+    document.body.innerHTML = zawartoscDoDruku;
+  };
+}
 
 function wyloguj() {
   localStorage.removeItem("rola");
