@@ -33,6 +33,46 @@
     .status-green { background-color: #e0f4e6; color: #2e7d32; font-weight: 600; border-radius: 4px; }
     .status-red { background-color: #fbeaea; color: #c0392b; font-weight: 600; border-radius: 4px; }
     .status-yellow { background-color: #fff7e0; color: #b8860b; font-weight: 600; border-radius: 4px; }
+
+    /* Style only for printing */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+        margin: 0;
+      }
+      .logout-container, button, #exportBtn, #filterDate, #filterLogin {
+        display: none;
+      }
+      h1 {
+        text-align: center;
+        font-size: 24px;
+        margin-top: 20px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        box-shadow: none;
+      }
+      th, td {
+        text-align: left;
+        padding: 10px 20px;
+      }
+      th {
+        background-color: #f5f7fa;
+        font-weight: bold;
+      }
+      td {
+        border-bottom: 1px solid #ddd;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .status-green, .status-red, .status-yellow {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
