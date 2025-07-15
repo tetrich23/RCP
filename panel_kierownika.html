@@ -33,6 +33,10 @@
     .status-green { background-color: #e0f4e6; color: #2e7d32; font-weight: 600; border-radius: 4px; }
     .status-red { background-color: #fbeaea; color: #c0392b; font-weight: 600; border-radius: 4px; }
     .status-yellow { background-color: #fff7e0; color: #b8860b; font-weight: 600; border-radius: 4px; }
+    .footer {
+      margin-top: 30px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
@@ -52,6 +56,7 @@
 
   <button onclick="filtruj()">Filtruj</button>
   <button id="exportBtn">Eksportuj do Excela</button>
+  <button onclick="drukuj()">Drukuj</button>
 </div>
 
 <table>
@@ -236,6 +241,50 @@ exportBtn.addEventListener("click", () => {
 function wyloguj() {
   localStorage.removeItem("rola");
   location.href = "index.html";
+}
+
+function drukuj() {
+  const nowaStrona = window.open('', '', 'height=600,width=800');
+  const tabelaDoDruku = document.querySelector("table").outerHTML;
+  const treść = `
+    <html>
+    <head>
+      <title>Lista obecności</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          text-align: center;
+        }
+        table {
+          width: 100%; border-collapse: collapse; margin-top: 20px;
+        }
+        th, td {
+          padding: 10px; border: 1px solid #ccc;
+          text-align: center;
+        }
+        th {
+          background-color: #f5f7fa;
+          font-weight: bold;
+        }
+        td {
+          font-size: 14px;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 16px;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>Lista obecności za miesiąc ..........</h1>
+      ${tabelaDoDruku}
+      <div class="footer">Podpis: __________________</div>
+    </body>
+    </html>
+  `;
+  nowaStrona.document.write(treść);
+  nowaStrona.document.close();
+  nowaStrona.print();
 }
 </script>
 </body>
