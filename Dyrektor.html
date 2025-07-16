@@ -203,54 +203,57 @@
     });
 
     function renderujTabele(dane) {
-      tabela.innerHTML = "";
-      stopka.innerHTML = "";
-      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
+  tabela.innerHTML = "";
+  stopka.innerHTML = "";
+  
+  // Sortowanie dat od 1 do 31
+  dane.sort((a, b) => new Date(a.data) - new Date(b.data));
 
-      dane.forEach(row => {
-        const norma = getNorma(row.login);
-        const godz = parseFloat(row.godziny) || 0;
-        const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
-        const kolor = status === "zaakceptowane" ? "status-green" :
-                      status === "odrzucone" ? "status-red" : "status-yellow";
+  dane.forEach(row => {
+    const norma = getNorma(row.login);
+    const godz = parseFloat(row.godziny) || 0;
+    const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
+    const kolor = status === "zaakceptowane" ? "status-green" :
+                  status === "odrzucone" ? "status-red" : "status-yellow";
 
-        const pokazGodziny = row.godziny === "urlop" ? "urlop" : formatujGodzinyDziesietne(godz);
+    const pokazGodziny = row.godziny === "urlop" ? "urlop" : formatujGodzinyDziesietne(godz);
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${mapaUzytkownikow[row.login] || row.login}</td>
-          <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start === "undefined" || row.start === undefined ? "urlop" : row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end === "undefined" || row.end === undefined ? "urlop" : row.end}</td>
-          <td>${pokazGodziny}</td>
-          <td class="${kolor}">${status}</td>
-          <td>
-            ${godz > norma && status !== "zaakceptowane" ? ` 
-              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-            ` : ""}
-          </td>
-          <td><button onclick="usun('${row.id}')">🗑️</button></td>
-        `;
-        tabela.appendChild(tr);
-      });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${mapaUzytkownikow[row.login] || row.login}</td>
+      <td>${row.data}</td>
+      <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start === "undefined" || row.start === undefined ? "urlop" : row.start}</td>
+      <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end === "undefined" || row.end === undefined ? "urlop" : row.end}</td>
+      <td>${pokazGodziny}</td>
+      <td class="${kolor}">${status}</td>
+      <td>
+        ${godz > norma && status !== "zaakceptowane" ? ` 
+          <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
+          <button onclick="odrzuc('${row.id}')">Odrzuć</button>
+        ` : ""}
+      </td>
+      <td><button onclick="usun('${row.id}')">🗑️</button></td>
+    `;
+    tabela.appendChild(tr);
+  });
 
-      const suma = dane.reduce((sum, r) => {
-        let godz = parseFloat(r.godziny) || 0;
-        if (r.status === "odrzucone" && godz > getNorma(r.login)) {
-          godz = getNorma(r.login);
-        }
-        return sum + godz;
-      }, 0).toFixed(2);
-
-      stopka.innerHTML = `
-        <tr>
-          <td colspan="4"><strong>Razem</strong></td>
-          <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
-          <td colspan="3"></td>
-        </tr>
-      `;
+  const suma = dane.reduce((sum, r) => {
+    let godz = parseFloat(r.godziny) || 0;
+    if (r.status === "odrzucone" && godz > getNorma(r.login)) {
+      godz = getNorma(r.login);
     }
+    return sum + godz;
+  }, 0).toFixed(2);
+
+  stopka.innerHTML = `
+    <tr>
+      <td colspan="4"><strong>Razem</strong></td>
+      <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
+      <td colspan="3"></td>
+    </tr>
+  `;
+}
+
 
     async function zapisz(id, pole, wartosc) {
       if (!/^\d{2}:\d{2}$/.test(wartosc)) {
