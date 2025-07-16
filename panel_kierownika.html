@@ -68,6 +68,7 @@
     <th>Koniec</th>
     <th>Godziny</th>
     <th>Status</th>
+    <th>Urlopy</th> <!-- Nowa kolumna dla urlopów -->
     <th>Akcja</th>
     <th>Usuń</th>
   </tr>
@@ -88,7 +89,7 @@ const db = firebase.firestore();
 const tabela = document.getElementById("tabela");
 const stopka = document.getElementById("stopka");
 const exportBtn = document.getElementById("exportBtn");
-let daneWidoczne = [], mapaUzytkownikow = {};
+let daneWidoczne = [], mapaUzytkownikow = {}, urlopy = {};
 
 const login10h = ["a.krzon@naszprad.com", "e.labaz@naszprad.com", "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"];
 
@@ -126,19 +127,29 @@ firebase.auth().onAuthStateChanged(async user => {
     select.appendChild(option);
   });
 
+  // Pobranie urlopów
+  const urlopySnap = await db.collection("urlopy").where("login", "in", podwladni).get();
+  urlopySnap.forEach(doc => {
+    const data = doc.data();
+    if (!urlopy[data.login]) urlopy[data.login] = [];
+    urlopy[data.login].push(data);
+  });
+
+  // Pobranie danych godzin
   const snapshot = await db.collection("godziny").get();
   daneWidoczne = snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
     .filter(r => podwladni.includes(r.login));
 
-  renderujTabele(daneWidoczne);
+  // Renderowanie tabeli
+  renderujTabele(daneWidoczne, urlopy);
 });
 
 function getNorma(login) {
   return login10h.includes(login.toLowerCase()) ? 10 : 8;
 }
 
-function renderujTabele(dane) {
+function renderujTabele(dane, urlopy) {
   tabela.innerHTML = "";
   stopka.innerHTML = "";
   dane.sort((a, b) => new Date(b.data) - new Date(a.data));
@@ -151,6 +162,10 @@ function renderujTabele(dane) {
     const pokazGodziny = status === "odrzucone" && godziny > norma ? norma : godziny;
     const wyswietloneImieNazwisko = mapaUzytkownikow[row.login] || row.login;
 
+    // Pobranie urlopów dla tego pracownika
+    const pracownikUrlopy = urlopy[row.login] || [];
+    const urlopStatus = pracownikUrlopy.length ? pracownikUrlopy.map(urlop => `${urlop.dataUrlopu}: ${urlop.statusUrlopu}`).join(", ") : "Brak urlopu";
+
     tabela.innerHTML += `
       <tr>
         <td>${wyswietloneImieNazwisko}</td>
@@ -159,6 +174,7 @@ function renderujTabele(dane) {
         <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
         <td>${formatujGodzinyDziesietne(pokazGodziny)}</td>
         <td class="${kolor}">${status}</td>
+        <td>${urlopStatus}</td> <!-- Dodana kolumna dla urlopu -->
         <td>
           ${godziny > norma && status !== "zaakceptowane" ? `
             <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
@@ -193,7 +209,7 @@ function filtruj() {
   const login = document.getElementById("filterLogin").value;
   const data = document.getElementById("filterDate").value;
   const wynik = daneWidoczne.filter(r => (!login || r.login === login) && (!data || r.data === data));
-  renderujTabele(wynik);
+  renderujTabele(wynik, urlopy);
 }
 
 async function zatwierdz(id) {
