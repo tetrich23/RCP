@@ -282,24 +282,36 @@
     }
 
     async function zapiszGodziny() {
-      const data = document.getElementById("data").value;
-      const start = document.getElementById("start").value;
-      const end = document.getElementById("end").value;
-      if (!data || !start || !end) return alert("Uzupełnij wszystkie pola godzin!");
-      if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const minutes = (eh * 60 + em) - (sh * 60 + sm);
-      const godziny = (minutes / 60).toFixed(2);
-      try {
-        await db.collection("godziny").add({ login, data, start, end, godziny });
-        alert("Godziny zapisane");
-        wczytaj();
-      } catch (err) {
-        console.error("Błąd zapisu godzin:", err);
-        alert("Błąd zapisu godzin");
-      }
-    }
+  const data = document.getElementById("data").value;
+  const start = document.getElementById("start").value;
+  const end = document.getElementById("end").value;
+
+  if (!data || !start || !end) return alert("Uzupełnij wszystkie pola godzin!");
+  if (start >= end) return alert("Godzina przyjścia musi być wcześniejsza niż wyjścia.");
+
+  // Rozdzielenie godzin i minut z wartości startu i końca
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+
+  // Obliczenie różnicy w minutach
+  const minutes = (eh * 60 + em) - (sh * 60 + sm);
+
+  // Obliczenie godzin i minut
+  const hours = Math.floor(minutes / 60); // Całe godziny
+  const mins = minutes % 60; // Pozostałe minuty
+
+  // Formatowanie wyniku do wyświetlania
+  const godziny = `${hours}h ${mins}m`;
+
+  try {
+    await db.collection("godziny").add({ login, data, start, end, godziny });
+    alert("Godziny zapisane");
+    wczytaj();
+  } catch (err) {
+    console.error("Błąd zapisu godzin:", err);
+    alert("Błąd zapisu godzin");
+  }
+}
 
     async function wczytaj() {
       const lista = document.getElementById("lista");
