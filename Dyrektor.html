@@ -166,89 +166,92 @@
     }
 
     firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return location.href = "index.html";
+  if (!user) return location.href = "index.html";
 
-      const doc = await db.collection("users").doc(user.email).get();
-      const data = doc.data();
-      if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
+  const doc = await db.collection("users").doc(user.email).get();
+  const data = doc.data();
+  if (!data || !data.rola || !data.podwladni) return location.href = "index.html";
 
-      const podwladni = data.podwladni;
-      const snapUzytkownicy = await db.collection("uzytkownicy").get();
-      snapUzytkownicy.forEach(d => {
-        const u = d.data();
-        if (u.imie && u.nazwisko) {
-          mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
-        }
-      });
+  const podwladni = data.podwladni;
+  const snapUzytkownicy = await db.collection("uzytkownicy").get();
+  snapUzytkownicy.forEach(d => {
+    const u = d.data();
+    if (u.imie && u.nazwisko) {
+      mapaUzytkownikow[d.id] = `${u.imie} ${u.nazwisko}`;
+    }
+  });
 
-      const select = document.getElementById("filterLogin");
-      podwladni.forEach(email => {
-        const option = document.createElement("option");
-        option.value = email;
-        option.textContent = mapaUzytkownikow[email] || email;
-        select.appendChild(option);
-      });
+  const select = document.getElementById("filterLogin");
+  podwladni.forEach(email => {
+    const option = document.createElement("option");
+    option.value = email;
+    option.textContent = mapaUzytkownikow[email] || email;
+    select.appendChild(option);
+  });
 
-      const snap = await db.collection("godziny").get();
-      daneWidoczne = snap.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(r => podwladni.includes(r.login));
+  // Pobieranie godzin pracy i urlopów
+  const godzinySnap = await db.collection("godziny").get();
+  const urlopySnap = await db.collection("urlopy").get();
 
-      renderujTabele(daneWidoczne);
-    });
+  const daneGodziny = godzinySnap.docs.map(doc => ({ id: doc.id, ...doc.data(), typ: "godziny" }));
+  const daneUrlopy = urlopySnap.docs.map(doc => ({ id: doc.id, ...doc.data(), typ: "urlop", godziny: "urlop" }));
+
+  daneWidoczne = [...daneGodziny, ...daneUrlopy].filter(r => podwladni.includes(r.login));
+
+  renderujTabele(daneWidoczne);
+});
 
     function renderujTabele(dane) {
-      tabela.innerHTML = "";
-      stopka.innerHTML = "";
-      dane.sort((a, b) => new Date(b.data) - new Date(a.data));
+  tabela.innerHTML = "";
+  stopka.innerHTML = "";
+  dane.sort((a, b) => new Date(b.data) - new Date(a.data));
 
-      dane.forEach(row => {
-        const norma = getNorma(row.login);
-        const godz = parseFloat(row.godziny);
-        const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
-        const kolor = status === "zaakceptowane" ? "status-green" :
-                      status === "odrzucone" ? "status-red" : "status-yellow";
+  dane.forEach(row => {
+    const norma = getNorma(row.login);
+    const godz = parseFloat(row.godziny) || 0;
+    const status = row.status || (godz > norma ? "oczekuje" : "zaakceptowane");
+    const kolor = status === "zaakceptowane" ? "status-green" :
+                  status === "odrzucone" ? "status-red" : "status-yellow";
 
-        const pokazGodziny = (godz > norma && status === "odrzucone")
-          ? formatujGodzinyDziesietne(norma)
-          : formatujGodzinyDziesietne(godz);
+    const pokazGodziny = (godz > norma && status === "odrzucone")
+      ? formatujGodzinyDziesietne(norma)
+      : formatujGodzinyDziesietne(godz);
 
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${mapaUzytkownikow[row.login] || row.login}</td>
-          <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
-          <td>${pokazGodziny}</td>
-          <td class="${kolor}">${status}</td>
-          <td>
-            ${godz > norma && status !== "zaakceptowane" ? `
-              <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
-              <button onclick="odrzuc('${row.id}')">Odrzuć</button>
-            ` : ""}
-          </td>
-          <td><button onclick="usun('${row.id}')">🗑️</button></td>
-        `;
-        tabela.appendChild(tr);
-      });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${mapaUzytkownikow[row.login] || row.login}</td>
+      <td>${row.data}</td>
+      <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
+      <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.typ === 'urlop' ? row.start : row.end}</td>
+      <td>${pokazGodziny}</td>
+      <td class="${kolor}">${status}</td>
+      <td>
+        ${godz > norma && status !== "zaakceptowane" ? `
+          <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
+          <button onclick="odrzuc('${row.id}')">Odrzuć</button>
+        ` : ""}
+      </td>
+      <td><button onclick="usun('${row.id}')">🗑️</button></td>
+    `;
+    tabela.appendChild(tr);
+  });
 
-      const suma = dane.reduce((sum, r) => {
-        let godz = parseFloat(r.godziny) || 0;
-        if (r.status === "odrzucone" && godz > getNorma(r.login)) {
-          godz = getNorma(r.login);
-        }
-        return sum + godz;
-      }, 0).toFixed(2);
-
-      stopka.innerHTML = `
-        <tr>
-          <td colspan="4"><strong>Razem</strong></td>
-          <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
-          <td colspan="3"></td>
-        </tr>
-      `;
+  const suma = dane.reduce((sum, r) => {
+    let godz = parseFloat(r.godziny) || 0;
+    if (r.status === "odrzucone" && godz > getNorma(r.login)) {
+      godz = getNorma(r.login);
     }
+    return sum + godz;
+  }, 0).toFixed(2);
 
+  stopka.innerHTML = `
+    <tr>
+      <td colspan="4"><strong>Razem</strong></td>
+      <td><strong>${formatujGodzinyDziesietne(parseFloat(suma))}</strong></td>
+      <td colspan="3"></td>
+    </tr>
+  `;
+}
     async function zapisz(id, pole, wartosc) {
       if (!/^\d{2}:\d{2}$/.test(wartosc)) {
         alert("Nieprawidłowy format godziny (HH:MM)");
@@ -289,15 +292,16 @@
       }
     }
 
-    function filtruj() {
-      const log = document.getElementById("filterLogin").value;
-      const dat = document.getElementById("filterDate").value;
-      const wynik = daneWidoczne.filter(r =>
-        (log === "" || r.login === log) &&
-        (dat === "" || r.data === dat)
-      );
-      renderujTabele(wynik);
-    }
+function filtruj() {
+  const log = document.getElementById("filterLogin").value;
+  const dat = document.getElementById("filterDate").value;
+  const wynik = daneWidoczne.filter(r =>
+    (log === "" || r.login === log) &&
+    (dat === "" || r.data === dat)
+  );
+  renderujTabele(wynik);
+}
+
 
     exportBtn.addEventListener("click", () => {
       const wb = XLSX.utils.book_new();
