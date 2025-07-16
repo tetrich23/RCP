@@ -163,109 +163,114 @@
     }
 
     function obliczGodziny(start, end) {
-      if (!start || !end) return "0.00";
-      const s = start.toLowerCase(), e = end.toLowerCase();
-      if (s === "urlop" || e === "urlop") return "urlop";
-      if (!/\d{2}:\d{2}/.test(start) || !/\d{2}:\d{2}/.test(end)) return "0.00";
-      const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
-      const total = (parseInt(eh)*60 + parseInt(em)) - (parseInt(sh)*60 + parseInt(sm));
-      return total > 0 ? (total/60).toFixed(2) : "0.00";
-    }
+  if (!start || !end) return "0.00"; // Jeżeli brak startu lub końca, zwróć 0
+  const s = start.toLowerCase(), e = end.toLowerCase();
+  if (s === "urlop" || e === "urlop") return "urlop"; // Sprawdzanie, czy to urlop
+  if (!/\d{2}:\d{2}/.test(start) || !/\d{2}:\d{2}/.test(end)) return "0.00"; // Jeżeli format godzin jest nieprawidłowy
+  const [sh, sm] = start.split(":"), [eh, em] = end.split(":");
+  const total = (parseInt(eh)*60 + parseInt(em)) - (parseInt(sh)*60 + parseInt(sm));
+  return total > 0 ? (total/60).toFixed(2) : "0.00"; // Oblicz godziny
+}
+
 
     async function wczytaj() {
-      const snapshotGodziny = await db.collection("godziny").get();
-      const snapshotUrlopy = await db.collection("urlopy").get();
+  const snapshotGodziny = await db.collection("godziny").get();
+  const snapshotUrlopy = await db.collection("urlopy").get();
 
-      const godziny = snapshotGodziny.docs.map(doc => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          login: d.login || "",
-          data: d.data || "",
-          start: d.start || "",
-          end: d.end || "",
-          godziny: d.godziny || obliczGodziny(d.start, d.end),
-          typ: "godziny"
-        };
-      });
+  // Godziny
+  const godziny = snapshotGodziny.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      login: d.login || "",
+      data: d.data || "",
+      start: d.start || "",
+      end: d.end || "",
+      godziny: d.godziny || obliczGodziny(d.start, d.end),
+      typ: "godziny"
+    };
+  });
 
-      const urlopy = snapshotUrlopy.docs.map(doc => {
-        const d = doc.data();
-        return {
-          id: doc.id,
-          login: d.login || "",
-          data: d.data || d.zakresOd || "",
-          start: d.typ || "urlop",
-          end: `${d.zakresOd || ""} - ${d.zakresDo || ""}`,
-          godziny: "urlop",
-          typ: "urlop"
-        };
-      });
+  // Urlopy
+  const urlopy = snapshotUrlopy.docs.map(doc => {
+    const d = doc.data();
+    return {
+      id: doc.id,
+      login: d.login || "",
+      data: d.data || d.zakresOd || "",
+      start: "urlop", // Ustawienie start na "urlop"
+      end: `${d.zakresOd || ""} - ${d.zakresDo || ""}`,
+      godziny: "urlop", // Ustawienie godziny na "urlop"
+      typ: "urlop"
+    };
+  });
 
-      const wszystkie = [...godziny, ...urlopy];
+  // Połączenie godzin i urlopów
+  const wszystkie = [...godziny, ...urlopy];
 
-      const filterUser = document.getElementById("filterUser");
-      if (filterUser.options.length <= 1) {
-        const loginy = [...new Set(wszystkie.map(d => d.login))];
-        filterUser.innerHTML = '<option value="">Wszyscy</option>' +
-          loginy.map(email => `<option value="${email}">${loginToNameMap[email] || email}</option>`).join('');
-      }
+  // Wczytanie filtrów
+  const filterUser = document.getElementById("filterUser");
+  if (filterUser.options.length <= 1) {
+    const loginy = [...new Set(wszystkie.map(d => d.login))];
+    filterUser.innerHTML = '<option value="">Wszyscy</option>' +
+      loginy.map(email => `<option value="${email}">${loginToNameMap[email] || email}</option>`).join('');
+  }
 
-      const filterMonth = document.getElementById("filterMonth");
-      if (filterMonth.options.length <= 1) {
-        const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
-        filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
-          miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
-      }
+  const filterMonth = document.getElementById("filterMonth");
+  if (filterMonth.options.length <= 1) {
+    const miesiace = [...new Set(wszystkie.map(d => d.data?.slice(0,7)).filter(Boolean))];
+    filterMonth.innerHTML = '<option value="">Wszystkie</option>' +
+      miesiace.map(m => `<option value="${m}">${m}</option>`).join('');
+  }
 
-      aktualneDane = wszystkie
-        .filter(d =>
-          (!filterUser.value || d.login === filterUser.value) &&
-          (!filterMonth.value || d.data?.startsWith(filterMonth.value))
-        )
-        .sort((a, b) => {
-  const nameA = (loginToNameMap[a.login] || a.login).toLowerCase();
-  const nameB = (loginToNameMap[b.login] || b.login).toLowerCase();
-  if (nameA < nameB) return -1;
-  if (nameA > nameB) return 1;
+  // Filtrowanie danych
+  aktualneDane = wszystkie
+    .filter(d =>
+      (!filterUser.value || d.login === filterUser.value) &&
+      (!filterMonth.value || d.data?.startsWith(filterMonth.value))
+    )
+    .sort((a, b) => {
+      const nameA = (loginToNameMap[a.login] || a.login).toLowerCase();
+      const nameB = (loginToNameMap[b.login] || b.login).toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      const dateA = new Date(a.data);
+      const dateB = new Date(b.data);
+      return dateA - dateB;
+    });
 
-  // Jeśli imiona/nazwiska są równe, sortuj po dacie rosnąco
-  const dateA = new Date(a.data);
-  const dateB = new Date(b.data);
-  return dateA - dateB;
-});
+  // Wypełnienie tabeli
+  const tbody = document.querySelector("#tabela-pracownikow tbody");
+  tbody.innerHTML = "";
 
+  aktualneDane.forEach(d => {
+    const tr = document.createElement("tr");
+    const name = loginToNameMap[d.login] || d.login;
+    tr.innerHTML = `
+      <td>${name}</td>
+      <td>${d.data}</td>
+      <td ${d.typ === 'godziny' ? 'contenteditable onblur="zapiszZmiane(\'' + d.id + '\', \'start\', this.innerText)"' : ''}>${d.start}</td>
+      <td ${d.typ === 'godziny' ? 'contenteditable onblur="zapiszZmiane(\'' + d.id + '\', \'end\', this.innerText)"' : ''}>${d.typ === 'urlop' ? d.start : d.end}</td>
+      <td>${d.godziny}</td>
+      <td>
+        ${d.typ === 'godziny' ? `<button onclick="usunRekord('${d.id}')">Usuń</button>` : `<button onclick="usunUrlop('${d.id}')">Usuń</button>`}
+      </td>`;
+    tbody.appendChild(tr);
+  });
 
-      const tbody = document.querySelector("#tabela-pracownikow tbody");
-      tbody.innerHTML = "";
+  // Suma godzin
+  const suma = aktualneDane
+    .filter(r => r.godziny !== "urlop")
+    .reduce((acc, r) => acc + parseFloat(r.godziny || 0), 0)
+    .toFixed(2);
 
-      aktualneDane.forEach(d => {
-        const tr = document.createElement("tr");
-        const name = loginToNameMap[d.login] || d.login;
-        tr.innerHTML = `
-          <td>${name}</td>
-          <td>${d.data}</td>
-          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'${d.id}\',\'start\',this.innerText)"' : ''}>${d.start}</td>
-          <td ${d.typ==='godziny' ? 'contenteditable onblur="zapiszZmiane(\'' + d.id + '\',\'end\',this.innerText)"' : ''}>${d.typ==='urlop' ? d.start : d.end}</td>
-          <td>${d.godziny}</td>
-          <td>
-            ${d.typ==='godziny' ? `<button onclick="usunRekord('${d.id}')">Usuń</button>` : `<button onclick="usunUrlop('${d.id}')">Usuń</button>`}
-          </td>`;
-        tbody.appendChild(tr);
-      });
-
-      const suma = aktualneDane
-        .filter(r => r.godziny !== "urlop")
-        .reduce((acc,r) => acc + parseFloat(r.godziny||0), 0)
-        .toFixed(2);
-      document.querySelector("#tabela-pracownikow tfoot").innerHTML = `
-        <tr>
-          <td colspan="4"><strong>Razem</strong></td>
-          <td>${suma}</td>
-          <td></td>
-        </tr>`;
-    }
-
+  document.querySelector("#tabela-pracownikow tfoot").innerHTML = `
+    <tr>
+      <td colspan="4"><strong>Razem</strong></td>
+      <td>${suma}</td>
+      <td></td>
+    </tr>`;
+}
     async function zapiszZmiane(id, pole, wartosc) {
       const v = wartosc.trim().toLowerCase();
       const ref = db.collection("godziny").doc(id);
