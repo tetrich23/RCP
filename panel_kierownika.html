@@ -155,8 +155,8 @@ function renderujTabele(dane) {
       <tr>
         <td>${wyswietloneImieNazwisko}</td>
         <td>${row.data}</td>
-        <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
-        <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
+        <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start === "undefined" || row.start === undefined ? "urlop" : row.start}</td>
+        <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end === "undefined" || row.end === undefined ? "urlop" : row.end}</td>
         <td>${formatujGodzinyDziesietne(pokazGodziny)}</td>
         <td class="${kolor}">${status}</td>
         <td>
