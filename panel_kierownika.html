@@ -205,10 +205,19 @@
     function renderujTabele(dane) {
   tabela.innerHTML = "";
   stopka.innerHTML = "";
+  
+  // Sortowanie po dacie: najpierw miesiąc, potem dzień
   dane.sort((a, b) => {
     const dataA = new Date(a.data);
     const dataB = new Date(b.data);
-    return dataA.getDate() - dataB.getDate(); // Sortowanie po dniu miesiąca
+    
+    // Porównanie po miesiącu
+    if (dataA.getMonth() !== dataB.getMonth()) {
+      return dataA.getMonth() - dataB.getMonth();
+    }
+
+    // Jeśli miesiące są takie same, porównanie po dniu
+    return dataA.getDate() - dataB.getDate();
   });
 
   dane.forEach(row => {
@@ -255,7 +264,6 @@
     </tr>
   `;
 }
-
 
     async function zapisz(id, pole, wartosc) {
       if (!/^\d{2}:\d{2}$/.test(wartosc)) {
