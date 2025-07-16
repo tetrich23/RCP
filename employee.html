@@ -314,55 +314,55 @@
 }
 
     async function wczytaj() {
-      const lista = document.getElementById("lista");
-      lista.innerHTML = "<p>Ładowanie danych...</p>";
-      zapisaneDane = [];
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "<p>Ładowanie danych...</p>";
+  zapisaneDane = [];
 
-      try {
-        const [godzinySnap, urlopySnap] = await Promise.all([
-          db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get(),
-          db.collection("urlopy").where("login", "==", login).orderBy("data", "asc").get()
-        ]);
+  try {
+    const [godzinySnap, urlopySnap] = await Promise.all([
+      db.collection("godziny").where("login", "==", login).orderBy("data", "asc").get(),
+      db.collection("urlopy").where("login", "==", login).orderBy("data", "asc").get()
+    ]);
 
-        lista.innerHTML = "";
+    lista.innerHTML = "";
 
-        godzinySnap.forEach(doc => {
-          const g = doc.data();
-          zapisaneDane.push(g);
+    godzinySnap.forEach(doc => {
+      const g = doc.data();
+      zapisaneDane.push(g);
 
-          const el = document.createElement("div");
-          el.className = "entry";
+      const el = document.createElement("div");
+      el.className = "entry";
 
-          if (g.start && g.end && g.godziny) {
-            el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny}h)`;
-          } else {
-            el.innerText = `${g.data}: (niekompletny wpis)`;
-          }
-
-          lista.appendChild(el);
-        });
-
-        urlopySnap.forEach(doc => {
-          const u = doc.data();
-          zapisaneDane.push(u);
-
-          const el = document.createElement("div");
-          el.className = "entry";
-          el.innerText = `${u.data}: ${u.typ} (urlop ${u.zakresOd} – ${u.zakresDo})`;
-
-          lista.appendChild(el);
-        });
-
-        if (!godzinySnap.size && !urlopySnap.size) {
-          lista.innerHTML = "<p>Brak danych.</p>";
-        }
-
-      } catch (err) {
-        console.error("Błąd wczytywania:", err);
-        lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
+      if (g.start && g.end && g.godziny) {
+        // Sprawdzamy, czy zapisane godziny są w odpowiednim formacie
+        el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny})`;
+      } else {
+        el.innerText = `${g.data}: (niekompletny wpis)`;
       }
+
+      lista.appendChild(el);
+    });
+
+    urlopySnap.forEach(doc => {
+      const u = doc.data();
+      zapisaneDane.push(u);
+
+      const el = document.createElement("div");
+      el.className = "entry";
+      el.innerText = `${u.data}: ${u.typ} (urlop ${u.zakresOd} – ${u.zakresDo})`;
+
+      lista.appendChild(el);
+    });
+
+    if (!godzinySnap.size && !urlopySnap.size) {
+      lista.innerHTML = "<p>Brak danych.</p>";
     }
 
+  } catch (err) {
+    console.error("Błąd wczytywania:", err);
+    lista.innerHTML = "<p>Błąd wczytywania danych.</p>";
+  }
+}
     function eksportuj() {
       if (!zapisaneDane.length) return alert("Brak danych do eksportu.");
       const dane = zapisaneDane.map(row => ({
