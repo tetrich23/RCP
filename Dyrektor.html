@@ -104,6 +104,7 @@
 
     <button onclick="filtruj()">Filtruj</button>
     <button id="exportBtn">Eksportuj do Excela</button>
+    <button onclick="drukuj()">Drukuj</button> <!-- Przycisk do drukowania -->
   </div>
 
   <table>
@@ -319,6 +320,73 @@
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
       XLSX.writeFile(wb, "godziny_dyrektor.xlsx");
     });
+
+    function drukuj() {
+      const nowaStrona = window.open('', '', 'height=600,width=800');
+      const tabela = document.querySelector("table");
+      const tabelaDoDruku = tabela.cloneNode(true); // Kopiujemy tabelę do wydruku
+
+      // Usuwamy kolumny "Status", "Akcja" i "Usuń"
+      const th = tabelaDoDruku.querySelectorAll("th");
+      const td = tabelaDoDruku.querySelectorAll("td");
+
+      // Usuwamy odpowiednie kolumny w tabeli
+      for (let i = 0; i < th.length; i++) {
+        if (th[i].textContent === "Status" || th[i].textContent === "Akcja" || th[i].textContent === "Usuń") {
+          th[i].remove();
+          let index = i;
+          td.forEach(t => {
+            if (t.cellIndex === index) t.remove();
+          });
+        }
+      }
+
+      const treść = `
+        <html>
+        <head>
+          <title>Lista obecności</title>
+          <style>
+            body {
+              font-family: 'Segoe UI', sans-serif;
+              text-align: center;
+              margin: 0;
+              padding: 20px;
+            }
+            table {
+              width: 100%; border-collapse: collapse; margin-top: 20px;
+            }
+            th, td {
+              padding: 10px; border: 1px solid #ccc;
+              text-align: center;
+            }
+            th {
+              background-color: #f5f7fa;
+              font-weight: bold;
+            }
+            td {
+              font-size: 14px;
+            }
+            .footer {
+              margin-top: 30px;
+              font-size: 16px;
+            }
+            h1 {
+              font-size: 24px;
+              margin-bottom: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Lista obecności za ..........</h1>
+          ${tabelaDoDruku.outerHTML}
+          <div class="footer">Podpis: __________________</div>
+        </body>
+        </html>
+      `;
+      nowaStrona.document.write(treść);
+      nowaStrona.document.close();
+      nowaStrona.print();
+    }
   </script>
 </body>
 </html>
