@@ -300,7 +300,7 @@
   const hours = Math.floor(minutes / 60); // Całe godziny
   const mins = minutes % 60; // Pozostałe minuty
 
-  // Formatowanie wyniku do wyświetlania
+  // Formatowanie wyniku do wyświetlania: np. 14h 42m
   const godziny = `${hours}h ${mins}m`;
 
   try {
@@ -312,6 +312,7 @@
     alert("Błąd zapisu godzin");
   }
 }
+
 
     async function wczytaj() {
   const lista = document.getElementById("lista");
@@ -333,8 +334,8 @@
       const el = document.createElement("div");
       el.className = "entry";
 
+      // Wyświetlanie zapisanych godzin w formacie "Xh Ym"
       if (g.start && g.end && g.godziny) {
-        // Sprawdzamy, czy zapisane godziny są w odpowiednim formacie
         el.innerText = `${g.data}: ${g.start} – ${g.end} (${g.godziny})`;
       } else {
         el.innerText = `${g.data}: (niekompletny wpis)`;
