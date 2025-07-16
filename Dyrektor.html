@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8" />
-  <title>Panel Dyrektora</title>
+  <title>Panel Kierownika</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -91,7 +91,7 @@
   </style>
 </head>
 <body>
-  <h1>Panel Dyrektora</h1>
+  <h1>Panel Kierownika</h1>
 
   <div>
     <label>Pracownik:</label>
@@ -225,7 +225,7 @@
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
           <td>
-            ${godz > norma && status !== "zaakceptowane" ? `
+            ${godz > norma && status !== "zaakceptowane" ? ` 
               <button onclick="zatwierdz('${row.id}')">Akceptuj</button>
               <button onclick="odrzuc('${row.id}')">Odrzuć</button>
             ` : ""}
@@ -321,7 +321,7 @@
       });
       const ws = XLSX.utils.json_to_sheet(daneDoXLSX);
       XLSX.utils.book_append_sheet(wb, ws, "Godziny");
-      XLSX.writeFile(wb, "godziny_dyrektor.xlsx");
+      XLSX.writeFile(wb, "godziny_kierownik.xlsx");
     });
 
     function drukuj() {
