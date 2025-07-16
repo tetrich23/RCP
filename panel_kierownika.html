@@ -151,12 +151,16 @@ function renderujTabele(dane) {
     const pokazGodziny = status === "odrzucone" && godziny > norma ? norma : godziny;
     const wyswietloneImieNazwisko = mapaUzytkownikow[row.login] || row.login;
 
+    // Jeśli pole "start" lub "end" jest puste, ustawiamy na "urlop"
+    const start = (row.start === null || row.start === undefined || row.start.trim() === "") ? "urlop" : row.start;
+    const end = (row.end === null || row.end === undefined || row.end.trim() === "") ? "urlop" : row.end;
+
     tabela.innerHTML += `
       <tr>
         <td>${wyswietloneImieNazwisko}</td>
         <td>${row.data}</td>
-        <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start === "undefined" || row.start === undefined ? "urlop" : row.start}</td>
-        <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end === "undefined" || row.end === undefined ? "urlop" : row.end}</td>
+        <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${start}</td>
+        <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${end}</td>
         <td>${formatujGodzinyDziesietne(pokazGodziny)}</td>
         <td class="${kolor}">${status}</td>
         <td>
@@ -177,6 +181,7 @@ function renderujTabele(dane) {
 
   stopka.innerHTML = `<tr><td colspan="4"><strong>Razem</strong></td><td><strong>${formatujGodzinyDziesietne(suma)}</strong></td><td colspan="3"></td></tr>`;
 }
+
 
 async function zapisz(id, pole, wartosc) {
   if (!/^\d{2}:\d{2}$/.test(wartosc)) return alert("Nieprawidłowy format (HH:MM)");
