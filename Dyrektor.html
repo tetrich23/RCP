@@ -149,11 +149,17 @@
     ];
 
     function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-      return diff > 0 ? diff.toFixed(2) : "0.00";
-    }
+  // Sprawdzamy, czy start lub end to "undefined" lub "urlop"
+  if (start === "undefined" || end === "undefined" || start === "urlop" || end === "urlop") {
+    return "urlop";
+  }
+
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+  return diff > 0 ? diff.toFixed(2) : "0.00";
+}
+
 
     function getNorma(login) {
       return login10h.includes(login.toLowerCase()) ? 10 : 8;
