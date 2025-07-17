@@ -8,9 +8,103 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
-    /* Stylizacje jak wcześniej */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: contain; /* Dostosowuje rozmiar zdjęcia */
+      background-position: center center; /* Ustawienie zdjęcia na środku */
+      background-attachment: fixed; /* Tło nie przewija się z resztą strony */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-    /* Dodatkowy styl dla linku do resetowania hasła */
+    .login-box, .role-box {
+      background-color: rgba(0, 0, 0, 0.6); /* Półprzezroczysty czarny */
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+      color: #fff; /* Ustawiamy kolor tekstu na biały */
+    }
+
+    h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      font-weight: 700;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      transition: all 0.3s ease;
+      background-color: rgba(255, 255, 255, 0.2); /* Transparentne tło inputów */
+      color: #fff; /* Kolor tekstu na biały */
+    }
+
+    input:focus, button:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+    }
+
+    .btn-back {
+      background-color: #6c757d;
+      color: white;
+      font-size: 14px;
+      padding: 10px;
+      width: 50%;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(108, 117, 125, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+      background-color: #5a6268;
+      transform: scale(1.05);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .role-box button {
+      background-color: #28a745;
+      color: white;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .role-box button:hover {
+      background-color: #218838;
+      transform: scale(1.05);
+    }
+
+    /* Styl dla linku do resetowania hasła */
     .reset-password {
       color: #007bff;
       font-size: 14px;
@@ -31,6 +125,7 @@
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Hasło">
     <button onclick="zaloguj()">Zaloguj</button>
+    <!-- Link do resetowania hasła -->
     <a href="javascript:void(0)" class="reset-password" onclick="resetujHaslo()">Resetuj hasło</a>
   </div>
 
