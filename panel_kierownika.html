@@ -104,7 +104,7 @@
 
     <button onclick="filtruj()">Filtruj</button>
     <button id="exportBtn">Eksportuj do Excela</button>
-    <button onclick="drukuj()">Drukuj</button> <!-- Przycisk do drukowania -->
+    <button onclick="drukuj()">Drukuj</button>
   </div>
 
   <table>
@@ -141,29 +141,12 @@
     const exportBtn = document.getElementById("exportBtn");
 
     let daneWidoczne = [];
-    let mapaUzytkownikow = {}; // email => "Imię Nazwisko"
+    let mapaUzytkownikow = {};
 
     const login10h = [
       "a.krzon@naszprad.com", "e.labaz@naszprad.com",
       "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
     ];
-
-    function obliczGodziny(start, end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const diff = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-      return diff > 0 ? diff.toFixed(2) : "0.00";
-    }
-
-    function getNorma(login) {
-      return login10h.includes(login.toLowerCase()) ? 10 : 8;
-    }
-
-    function formatujGodzinyDziesietne(decimalHours) {
-      const godziny = Math.floor(decimalHours);
-      const minuty = Math.round((decimalHours - godziny) * 60);
-      return `${godziny}h ${minuty}min`;
-    }
 
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
@@ -205,19 +188,11 @@
     function renderujTabele(dane) {
       tabela.innerHTML = "";
       stopka.innerHTML = "";
-      
-      // Sortowanie po dacie: najpierw miesiąc, potem dzień
+
       dane.sort((a, b) => {
         const dataA = new Date(a.data);
         const dataB = new Date(b.data);
-        
-        // Porównanie po miesiącu
-        if (dataA.getMonth() !== dataB.getMonth()) {
-          return dataA.getMonth() - dataB.getMonth();
-        }
-
-        // Jeśli miesiące są takie same, porównanie po dniu
-        return dataA.getDate() - dataB.getDate();
+        return dataA - dataB;
       });
 
       dane.forEach(row => {
@@ -233,8 +208,8 @@
         tr.innerHTML = `
           <td>${mapaUzytkownikow[row.login] || row.login}</td>
           <td>${row.data}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start === "undefined" || row.start === undefined ? "urlop" : row.start}</td>
-          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end === "undefined" || row.end === undefined ? "urlop" : row.end}</td>
+          <td contenteditable onblur="zapisz('${row.id}', 'start', this.innerText)">${row.start}</td>
+          <td contenteditable onblur="zapisz('${row.id}', 'end', this.innerText)">${row.end}</td>
           <td>${pokazGodziny}</td>
           <td class="${kolor}">${status}</td>
           <td>
@@ -304,13 +279,11 @@
       const data = doc.data();
 
       if (data.godziny === "urlop") {
-        // Jeśli godziny to urlop, pozwól na usunięcie
         if (confirm("Czy na pewno usunąć ten urlop?")) {
           await db.collection("godziny").doc(id).delete();
           location.reload();
         }
       } else {
-        // Dla innych przypadków (np. godziny pracy), pytaj o usunięcie
         if (confirm("Czy na pewno usunąć?")) {
           await db.collection("godziny").doc(id).delete();
           location.reload();
