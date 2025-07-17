@@ -299,29 +299,40 @@
     }
 
     async function usun(id) {
-  const ref = db.collection("godziny").doc(id);
-  const doc = await ref.get();
-  const data = doc.data();
+  // Pierwsza próba - sprawdzamy kolekcję 'godziny'
+  const refGodziny = db.collection("godziny").doc(id);
+  const docGodziny = await refGodziny.get();
 
-  if (!data) {
+  // Druga próba - sprawdzamy kolekcję 'urlopy'
+  const refUrlopy = db.collection("urlopy").doc(id);
+  const docUrlopy = await refUrlopy.get();
+
+  // Sprawdzamy, czy dokument istnieje w którejkolwiek kolekcji
+  if (docGodziny.exists) {
+    const data = docGodziny.data();
+    if (data.start === "urlop" || data.end === "urlop" || data.godziny === "urlop") {
+      if (confirm("Czy na pewno chcesz usunąć ten wiersz z urlopem?")) {
+        await db.collection("godziny").doc(id).delete();
+        location.reload();
+      }
+    } else {
+      if (confirm("Czy na pewno chcesz usunąć ten wiersz?")) {
+        await db.collection("godziny").doc(id).delete();
+        location.reload();
+      }
+    }
+  } 
+  else if (docUrlopy.exists) {
+    const dataUrlop = docUrlopy.data();
+    if (confirm("Czy na pewno chcesz usunąć ten urlop?")) {
+      await db.collection("urlopy").doc(id).delete();
+      location.reload();
+    }
+  } 
+  else {
     alert("Nie znaleziono danych do usunięcia.");
-    return;
-  }
-
-  // Jeśli dane zawierają "urlop" w jednym z pól, możemy usunąć ten wiersz
-  if (data.start === "urlop" || data.end === "urlop" || data.godziny === "urlop") {
-    if (confirm("Czy na pewno chcesz usunąć ten wiersz z urlopem?")) {
-      await db.collection("godziny").doc(id).delete();
-      location.reload();
-    }
-  } else {
-    if (confirm("Czy na pewno chcesz usunąć ten wiersz?")) {
-      await db.collection("godziny").doc(id).delete();
-      location.reload();
-    }
   }
 }
-
 
     function filtruj() {
       const log = document.getElementById("filterLogin").value;
