@@ -7,86 +7,101 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
+   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
+      font-family: 'Poppins', sans-serif;
       margin: 0;
       padding: 40px 20px;
-      background: linear-gradient(to right, #e9eff5, #fdfdfd);
-      color: #333;
+      background: linear-gradient(to right, #2b5876, #4e4376);
+      color: #fff;
     }
     h1 {
       text-align: center;
-      font-size: 28px;
+      font-size: 32px;
       margin-bottom: 30px;
-      color: #2c3e50;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
     input, select, button {
       margin: 5px;
-      padding: 10px 12px;
+      padding: 12px 15px;
       font-size: 14px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      border: 2px solid #fff;
       outline: none;
-      transition: border-color 0.3s;
+      transition: all 0.3s ease;
     }
-    input:focus, select:focus {
-      border-color: #007bff;
+    input:focus, select:focus, button:focus {
+      border-color: #ff7c5d;
+      box-shadow: 0 0 10px rgba(255, 124, 93, 0.8);
     }
     button {
-      background-color: #007bff;
+      background-color: #ff7c5d;
       color: white;
       border: none;
       font-weight: bold;
       cursor: pointer;
-      transition: background-color 0.3s;
+      transition: background-color 0.3s ease, transform 0.2s ease-in-out;
     }
     button:hover {
-      background-color: #0056b3;
+      background-color: #ff5a3e;
+      transform: scale(1.05);
     }
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      border-radius: 8px;
+      border-radius: 10px;
       overflow: hidden;
       margin-top: 30px;
+      background-color: #ffffff;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      background-color: white;
     }
     th {
-      background-color: #f5f7fa;
+      background-color: #ff7c5d;
       padding: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      font-size: 13px;
+      font-size: 14px;
+      color: #fff;
+      text-align: center;
     }
     td {
-      padding: 10px;
-      border-top: 1px solid #e0e6ed;
+      padding: 12px;
+      border-top: 1px solid #ddd;
       text-align: center;
       font-size: 14px;
+      color: #333;
     }
     td[contenteditable] {
-      background-color: #f9fcff;
+      background-color: #f0f0f0;
+      cursor: pointer;
     }
     .status-green {
-      background-color: #e0f4e6;
-      color: #2e7d32;
-      font-weight: 600;
+      background-color: #28a745;
+      color: white;
+      font-weight: bold;
+      padding: 4px 8px;
       border-radius: 4px;
     }
     .status-red {
-      background-color: #fbeaea;
-      color: #c0392b;
-      font-weight: 600;
+      background-color: #dc3545;
+      color: white;
+      font-weight: bold;
+      padding: 4px 8px;
       border-radius: 4px;
     }
     .status-yellow {
-      background-color: #fff7e0;
-      color: #b8860b;
-      font-weight: 600;
+      background-color: #ffc107;
+      color: black;
+      font-weight: bold;
+      padding: 4px 8px;
       border-radius: 4px;
+    }
+    .container {
+      margin: 0 auto;
+      max-width: 1200px;
     }
   </style>
 </head>
