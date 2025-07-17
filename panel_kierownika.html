@@ -286,22 +286,28 @@
     }
 
     async function usun(id) {
-      const ref = db.collection("godziny").doc(id);
-      const doc = await ref.get();
-      const data = doc.data();
+  const ref = db.collection("godziny").doc(id);
+  const doc = await ref.get();
+  const data = doc.data();
 
-      if (data.godziny === "urlop") {
-        if (confirm("Czy na pewno usunąć ten urlop?")) {
-          await db.collection("godziny").doc(id).delete();
-          location.reload();
-        }
-      } else {
-        if (confirm("Czy na pewno usunąć?")) {
-          await db.collection("godziny").doc(id).delete();
-          location.reload();
-        }
-      }
+  if (!data) {
+    alert("Nie znaleziono danych do usunięcia.");
+    return;
+  }
+
+  if (data.godziny === "urlop") {
+    if (confirm("Czy na pewno usunąć ten urlop?")) {
+      await db.collection("godziny").doc(id).delete();
+      location.reload();
     }
+  } else {
+    if (confirm("Czy na pewno usunąć?")) {
+      await db.collection("godziny").doc(id).delete();
+      location.reload();
+    }
+  }
+}
+
 
     function filtruj() {
       const log = document.getElementById("filterLogin").value;
