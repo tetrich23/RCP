@@ -299,18 +299,18 @@
     }
 
     async function usun(id) {
-  // Pierwsza próba - sprawdzamy kolekcję 'godziny'
+  console.log(`Sprawdzanie dokumentu o ID: ${id}`);
+
+  // Próbujemy znaleźć dokument w kolekcji "godziny"
   const refGodziny = db.collection("godziny").doc(id);
   const docGodziny = await refGodziny.get();
 
-  // Druga próba - sprawdzamy kolekcję 'urlopy'
-  const refUrlopy = db.collection("urlopy").doc(id);
-  const docUrlopy = await refUrlopy.get();
-
-  // Sprawdzamy, czy dokument istnieje w którejkolwiek kolekcji
   if (docGodziny.exists) {
-    const data = docGodziny.data();
-    if (data.start === "urlop" || data.end === "urlop" || data.godziny === "urlop") {
+    const dataGodziny = docGodziny.data();
+    console.log("Dokument w kolekcji godziny:", dataGodziny); // Logowanie danych z kolekcji "godziny"
+
+    // Jeśli dane zawierają "urlop" w jednym z pól, możemy usunąć ten wiersz
+    if (dataGodziny.start === "urlop" || dataGodziny.end === "urlop" || dataGodziny.godziny === "urlop") {
       if (confirm("Czy na pewno chcesz usunąć ten wiersz z urlopem?")) {
         await db.collection("godziny").doc(id).delete();
         location.reload();
@@ -322,15 +322,27 @@
       }
     }
   } 
-  else if (docUrlopy.exists) {
-    const dataUrlop = docUrlopy.data();
-    if (confirm("Czy na pewno chcesz usunąć ten urlop?")) {
-      await db.collection("urlopy").doc(id).delete();
-      location.reload();
-    }
-  } 
+  // Jeśli dokument nie istnieje w kolekcji "godziny", sprawdzamy kolekcję "urlopy"
   else {
-    alert("Nie znaleziono danych do usunięcia.");
+    const refUrlopy = db.collection("urlopy").doc(id);
+    const docUrlopy = await refUrlopy.get();
+    if (docUrlopy.exists) {
+      const dataUrlopy = docUrlopy.data();
+      console.log("Dokument w kolekcji urlopy:", dataUrlopy); // Logowanie danych z kolekcji "urlopy"
+
+      // Sprawdzamy, czy dokument ma pola "zakresOd" i "zakresDo"
+      if (dataUrlopy.zakresOd && dataUrlopy.zakresDo) {
+        if (confirm("Czy na pewno chcesz usunąć ten urlop?")) {
+          await db.collection("urlopy").doc(id).delete();
+          location.reload();
+        }
+      } else {
+        alert("Nie znaleziono danych urlopu do usunięcia.");
+      }
+    } else {
+      console.log("Nie znaleziono dokumentu w żadnej z kolekcji");
+      alert("Nie znaleziono danych do usunięcia.");
+    }
   }
 }
 
