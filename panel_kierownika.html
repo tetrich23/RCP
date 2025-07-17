@@ -148,6 +148,11 @@
       "n.gmitruk@naszprad.com", "p.haczkiewicz@naszprad.com"
     ];
 
+    // Funkcja getNorma
+    function getNorma(login) {
+      return login10h.includes(login.toLowerCase()) ? 10 : 8;
+    }
+
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
 
