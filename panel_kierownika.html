@@ -153,6 +153,13 @@
       return login10h.includes(login.toLowerCase()) ? 10 : 8;
     }
 
+    // Funkcja formatująca godziny dziesiętne na godziny i minuty
+    function formatujGodzinyDziesietne(decimalHours) {
+      const godziny = Math.floor(decimalHours);
+      const minuty = Math.round((decimalHours - godziny) * 60);
+      return `${godziny}h ${minuty}min`;
+    }
+
     firebase.auth().onAuthStateChanged(async user => {
       if (!user) return location.href = "index.html";
 
